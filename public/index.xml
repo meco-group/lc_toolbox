@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>LCToolbox</title>
+    <link>//meco.pages.mech.kuleuven.be/lc_toolbox/</link>
+    <description>Recent content on LCToolbox</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="//meco.pages.mech.kuleuven.be/lc_toolbox/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MECO tools</title>
+      <link>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/mecotools/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/mecotools/</guid>
+      <description>Here come the MECO tools (mixedHinfsyn, mixedFixedOrder, &amp;hellip;)</description>
+    </item>
+    
+    <item>
+      <title>SDP solvers</title>
+      <link>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/sdp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/sdp/</guid>
+      <description>Since LCToolbox nearly always reformulates a controller synthesis problems as a semidefinite program (SDP), you will need an appropriate solver for this. MATLAB&amp;rsquo;s Robust Control Toolbox offers &amp;lsquo;LMI Lab&amp;rsquo;. However, for some problem types it might be convenient to use more flexible solvers. LCToolbox formulates (nearly) all SDPs through YALMIP and thus supports all solvers that YALMIP interfaces. A complete list can be found here.</description>
+    </item>
+    
+    <item>
+      <title>About</title>
+      <link>//meco.pages.mech.kuleuven.be/lc_toolbox/about/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>//meco.pages.mech.kuleuven.be/lc_toolbox/about/</guid>
+      <description>Purpose LCToolbox is an open-source linear control toolbox for MATLAB facilitating robust linear feedback controller design. Its main goal is to shield end users (control engineers) from tedious and time-consuming pre- and postprocessing steps that are typically involved in modern controller synthesis (based on H&amp;#8734; and H2 norms). Both linear time-invariant (LTI) and linear parameter-dependent models are supported.
+The toolbox is, however, not restricted to control design, but strives for being a helpful tool in the entire design procedure of a linear controller.</description>
+    </item>
+    
+  </channel>
+</rss>

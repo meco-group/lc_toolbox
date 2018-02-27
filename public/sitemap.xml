@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/mecotools/</loc>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/sdp/</loc>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/about/</loc>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/</loc>
+  </url>
+  
+  <url>
+    <loc>//meco.pages.mech.kuleuven.be/lc_toolbox/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+</urlset>

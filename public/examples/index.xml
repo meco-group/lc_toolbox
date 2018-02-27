@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Examples on LCToolbox</title>
+    <link>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/</link>
+    <description>Recent content in Examples on LCToolbox</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="//meco.pages.mech.kuleuven.be/lc_toolbox/examples/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MECO tools</title>
+      <link>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/mecotools/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>//meco.pages.mech.kuleuven.be/lc_toolbox/examples/mecotools/</guid>
+      <description>Here come the MECO tools (mixedHinfsyn, mixedFixedOrder, &amp;hellip;)</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>3rdparties on LCToolbox</title>
+    <link>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/</link>
+    <description>Recent content in 3rdparties on LCToolbox</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SDP solvers</title>
+      <link>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/sdp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>//meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/sdp/</guid>
+      <description>Since LCToolbox nearly always reformulates a controller synthesis problems as a semidefinite program (SDP), you will need an appropriate solver for this. MATLAB&amp;rsquo;s Robust Control Toolbox offers &amp;lsquo;LMI Lab&amp;rsquo;. However, for some problem types it might be convenient to use more flexible solvers. LCToolbox formulates (nearly) all SDPs through YALMIP and thus supports all solvers that YALMIP interfaces. A complete list can be found here.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -4,7 +4,7 @@ The LC Toolbox (Linear Control Toolbox) is designed to support the control engin
 
 # Installation
 
-The LC Toolbox runs within matlab and requires the Robust Control Toolbox. This is a minimal setup which enables the user to use the systems theory module.
+The LC Toolbox runs within MATLAB and requires the Robust Control Toolbox. This is a minimal setup which enables the user to use the systems theory module.
 
 Recommended external packages:
 * [YALMIP](https://yalmip.github.io/): some solvers require yalmip for the parsing of LMIs

@@ -1,20 +1,20 @@
 # LC Toolbox: its purpose
 
-The LC Toolbox (Linear Control Toolbox) is designed to support the control engineer throughout the entire controller design procedure, i.e. starting from identification up to the design itself and the validation. This is done by providing an intuitive syntax to formulate the design in a natural way, shielding the user from the complex mathematics happening behind the scenes. The toolbox provides 3 modules: the basic systems theory module, the identification module and the controller design module.
+LCToolbox (a Linear Control Toolbox) is developed to support control engineers throughout the entire controller design procedure, i.e. starting from identification up to the design itself and the validation. This is done by providing an intuitive syntax to formulate the design in a natural way, shielding the user from the complex mathematics happening behind the scenes. The toolbox provides 3 modules: the basic systems theory module, the identification module and the controller design module.
 
-# Installation
+# Installation (see also [this overview](https://meco.pages.mech.kuleuven.be/lc_toolbox/3rdparty/))
 
 The LC Toolbox runs within MATLAB and requires the Robust Control Toolbox. This is a minimal setup which enables the user to use the systems theory module.
 
 Recommended external packages:
-* [YALMIP](https://yalmip.github.io/): some solvers require yalmip for the parsing of LMIs
-* A decent LMI solver: this might improve the quality of a solution as well as the speed at which it is solved.
+* [YALMIP](https://yalmip.github.io/): (nearly) all optimization problems involved in the controller design are parsed through YALMIP.
+* A decent SDP solver: this might improve the quality of a solution as well as the speed at which it is solved. All SDP solvers supported by YALMIP can be used. Popular solvers are:
   1. [Mosek](https://www.mosek.com/): free academic license
   2. [SeDuMi](http://sedumi.ie.lehigh.edu/): free LMI solver
   3. [SDPT3](http://www.math.nus.edu.sg/~mattohkc/sdpt3.html): free LMI solver
-* [Optispline](https://github.com/meco-group/optispline): enables LPV controller design
+* [Optispline](https://github.com/meco-group/optispline): this spline toolbox enables LPV controller design.
 
-# User guide (crash course)
+# User guide (a crash course)
 
 ## 1. Systems theory module
 
@@ -26,7 +26,7 @@ The LC Toolbox makes a clear distinction between models and systems. Systems ref
 
 The toolbox supports a bunch of models. 
 
-* SSmod/DSSmod: counterparts for matlab's standard `ss` and `dss`
+* SSmod/DSSmod: counterparts for MATLAB's standard `ss` and `dss`
 * ODEmod: general nonlinear dynamics of the form `dx/dt = f(x,u), y = g(x,u)`
 * FRDmod: measured frequency response function
 * Umod: uncertain model with nominal model and uncertainty quantification
@@ -95,15 +95,15 @@ Coming soon! The identification module is currently being thoroughly revised and
 
 ## 3. Controller design module
 
-The toolbox focuses on the H-infinity/H-2 formalism which is an optimal controller design strategy. The ingredients to optimal controller design are channels, weights and norms. These are again provided by the toolbox and are readily accessible.
+The toolbox focuses on the <i>H</i><sup>&#8734;<sup>/<i>H</i><sup>2</sup> formalism which is an optimal controller design strategy. The ingredients to optimal controller design are channels, weights and norms. These are again provided by the toolbox and are readily accessible.
 
 ### 3.1. Channels
 
-A channel is nothing more than the relation between an input and an output, for instance looking from `r` to `e`, or denoted as a transfer function: `e/r`. The toolbox uses exactly this notation to create a channel: `T = G.out/r;`. In order to keep track of transfer functions, one can also add a name to the channels using the call: `T = Channel(G.out/r,'Complementary Sensitivity')`. Channels can also be used to access the specific transfer function in a system object: `Tmod = T(CL);` will get you the model of the channel T within the closed loop. In this case, you could consider the channel to be some kind of operator.
+A channel is nothing more than the relation between an input and an output, for instance looking from `r` to `e`, or denoted as a transfer function: `e/r`. The toolbox uses exactly this notation to create a channel: `T = G.out/r;`. In order to keep track of transfer functions, one can also add a name to the channels using the call: `T = Channel(G.out/r,'Complementary Sensitivity')`. Channels can also be used to access the specific transfer function in a system object: `Tmod = T(CL);` or `Tmod = CL(T);` will get you the model of the channel T within the closed loop. In this case, you could consider the channel to be some kind of operator.
 
 ### 3.2. Weights
 
-Weights reflect the user's design criteria. Although any (stable!) transfer function can be used as a weight, usually only a few different weights are employed. Therefor, the Weight class is implemented. It offers these standard weights and makes them easily accessible to the user. An overview:
+Weights reflect the user's design criteria. Although any (stable! - at least for the time being) transfer function can be used as a weight, usually only a few different weights are employed. Therefore, the Weight class is implemented. It offers these standard weights and makes them easily accessible to the user. An overview:
 
 * Weight.DC(max): weight to constrain the maximum of a transfer function to max (dB)
 * Weight.LF(crossover,order,dcgain): weight to push low frequencies down, useful to shape for instance a sensitivity function

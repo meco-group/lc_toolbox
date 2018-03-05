@@ -95,7 +95,7 @@ Coming soon! The identification module is currently being thoroughly revised and
 
 ## 3. Controller design module
 
-The toolbox focuses on the <i>H</i><sup>&#8734;<sup>/<i>H</i><sup>2</sup> formalism which is an optimal controller design strategy. The ingredients to optimal controller design are channels, weights and norms. These are again provided by the toolbox and are readily accessible.
+The toolbox focuses on the <i>H</i><sub>&#8734;</sub>/<i>H</i><sub>2</sub> formalism which is an optimal controller design strategy. The ingredients to optimal controller design are channels, weights and norms. These are again provided by the toolbox and are readily accessible.
 
 ### 3.1. Channels
 

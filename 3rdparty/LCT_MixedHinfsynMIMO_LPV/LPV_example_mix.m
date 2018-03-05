@@ -20,9 +20,10 @@ clear all; clc; close all
 meco_binaries('cpp_splines','develop');
 import splines.*
 
-        k1    = SchedulingParameter('k1',[10,16],0);
-        im2   = SchedulingParameter('im2',[0.25,1],0);
-        param = {k1,im2};
+        k1    = SchedulingParameter('k1',[10,16],0.2);
+im2 = 11;        
+        %im2   = SchedulingParameter('im2',[0.25,1],0.5);
+        param = {k1};
 
 m1 = 10; k2 = 5; c1 = 0.2; c2 = 0.3; 
 A = [0 0 1 0; 0 0 0 1; -k1*(1/m1), k1*(1/m1), -(c1+c2)/m1, c2/m1; k1*im2, -(k1+k2)*im2, c2*im2, -c2*im2];
@@ -31,7 +32,7 @@ C = [1 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0; 1 0 0 0; 0 0 0 1];
 D = [zeros(4,2), [0 0; 0 0; 1 0; 0 1]; zeros(2,2), zeros(2,2)];
 nu = 2; ny = 2; 
 sys.A = A; sys.B = B; sys.C = C; sys.D = D; sys.Ts = 0;
-options = struct('var_deg',1,'var_knots',0,'controller_dependency','a','verbose',2,'relax_deg',1);
+options = struct('var_deg',1,'var_knots',0,'controller_dependency','ada','verbose',2,'relax_deg',1);
 % set up and solve the LPV control problem
         
 % performance specifications

@@ -56,7 +56,7 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LPVDSSmod < AbstractDSSmod & Ab
         end
         
         function out = norm(self,varargin)
-            sys.A = self.A; sys.B = self.B; sys.C = self.C; sys.D = self.D;
+            sys.A = self.A; sys.B = self.B; sys.C = self.C; sys.D = self.D; sys.Ts = self.Ts;
             assert(rank(self.E)==self.nx,'E matrix does not have full rank, cannot proceed further')
             switch nargin
                 case 1

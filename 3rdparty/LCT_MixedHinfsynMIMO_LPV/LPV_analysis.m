@@ -122,9 +122,14 @@ for i = 1:N
     Bt{i} = BSplineBasis([param{i}.basis.domain.min*ones(deg(i),1);linspace(param{i}.basis.domain.min,param{i}.basis.domain.max,nknots(i)+2)';param{i}.basis.domain.max*ones(deg(i),1)],deg(i));
 end
 TB = TensorBasis(Bt,args);
-
-[P,dPdt] = build_Lyapmat(TB,param,nx,opti,'brv');
-Phi = [dPdt*eye(nx), P; P, zeros(nx)];
+switch sys.Ts
+    case {0,{}}
+        [P,dPdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
+        Phi = [dPdt*eye(nx), P; P, zeros(nx)];
+    otherwise
+        [P,dPdt] = build_Lyapmat(TB,param,nx,opti,'brv','d',deg,nknots);
+        Phi = [-P, zeros(nx); zeros(nx), dPdt*eye(nx)];
+end
     switch opts.spec
        case inf
             switch opts.objective
@@ -224,7 +229,7 @@ sol_info.coeffs_Term = Term.coeff.dimension;
 [pr,~]               = checkset(opti.yalmip_constraints); % primal residual
 if pr > -opts.tolerance
     sol_info.feasible  = 1;
-    sol_info.objective = sol.value(objective);
+    sol_info.objective = sqrt(sol.value(objective));
     switch opts.spec
         case {2,inf}
             sol_info.gam2 = sol.value(gam2);
@@ -252,7 +257,6 @@ sol_info.check_neg_Term = max(max_eig);
 
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function sys = generalized_plant(sys,nu,ny)         
             if nargin == 1; sys.nu = 0; sys.ny = 0; end

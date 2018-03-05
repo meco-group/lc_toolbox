@@ -66,8 +66,7 @@ classdef SchedulingParameter < splines.Function
         function a = argument(self)
             a = arguments(tensor_basis(self));
         end
-    end
-    
+end    
     methods(Static)
         function [LIA,LOCB] = ismember(A,B)
             argsA = cellfun(@(x)arguments(tensor_basis(x)),A,'un',0);

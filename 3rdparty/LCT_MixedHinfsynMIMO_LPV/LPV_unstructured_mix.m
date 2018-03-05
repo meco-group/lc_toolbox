@@ -67,26 +67,47 @@ if nargin == 7
 else
     opts = default;
 end
-
-switch opts.controller_dependency
-    case 'ada' % controller depending on parameter and its derivative
-        [K,sol_info] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,0);
-    case 'a'   % controller depending on parameter only
-        [K1,Primal1] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,1);
-        [K2,Primal2] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,2);
-        if Primal1.objective < Primal2.objective
-            sol_info = Primal1; K = K1;
-        else
-            sol_info = Primal2; K = K2;
+switch sys.Ts
+    case {0,{}}
+        switch opts.controller_dependency
+            case 'ada' % controller depending on parameter and its derivative
+                [K,sol_info] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,0);
+            case 'a'   % controller depending on parameter only
+                [K1,Primal1] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,1);
+                [K2,Primal2] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,2);
+                if ((Primal1.objective <= Primal2.objective)&& ~isinf(Primal1.objective))
+                    sol_info = Primal1; K = K1;
+                elseif Primal1.objective > Primal2.objective
+                    sol_info = Primal2; K = K2;
+                else
+                    error('Sorry, SDP : INFEASIBLE problem, cannot go further')
+                end
+            otherwise
+                error('Wrong selection of controller dependency, must be ''a'' or ''ada''.');
         end
-    otherwise
-        error('Wrong selection of controller dependency, must be ''a'' or ''ada''.');
+    otherwise 
+        switch opts.controller_dependency
+            case 'ada' % controller depending on parameter and its derivative
+                [K,sol_info] = LPV_unstructured_mix_primal_DT(sys,ny,nu,alpha,channel,param,opts,0);
+            case 'a'   % controller depending on parameter only
+                [K,sol_info] = LPV_unstructured_mix_primal_DT(sys,ny,nu,alpha,channel,param,opts,1);
+%                 [K2,Primal2] = LPV_unstructured_mix_primal_DT(sys,ny,nu,alpha,channel,param,opts,2);
+%                 if ((Primal1.objective <= Primal2.objective)&& ~isinf(Primal1.objective))
+%                     sol_info = Primal1; K = K1;
+%                 elseif Primal1.objective > Primal2.objective
+%                     sol_info = Primal2; K = K2;
+%                 else
+%                     error('Sorry, SDP : INFEASIBLE problem, cannot go further')
+%                 end
+%             otherwise
+%                 error('Wrong selection of controller dependency, must be ''a'' or ''ada''.');
+         end
 end
-
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [K,sol_info] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,dep)
+
 t_start = cputime; 
 
 import splines.*
@@ -140,23 +161,23 @@ elseif length(opts.var_knots) == N; nknots = opts.var_knots;
 else   error('opts.var_knots has incorrect dimension'); end
 
 % construct TensorBasis
-for i = 1:N
-    args{i} = param{i}.tensor_basis.arguments;
-    B{i} = BSplineBasis([param{i}.basis.domain.min*ones(deg(i),1);linspace(param{i}.basis.domain.min,param{i}.basis.domain.max,nknots(i)+2)';param{i}.basis.domain.max*ones(deg(i),1)],deg(i));
-end
-TB = TensorBasis(B,args);
+        for i = 1:N
+            args{i} = param{i}.tensor_basis.arguments;
+            B{i} = BSplineBasis([param{i}.basis.domain.min*ones(deg(i),1);linspace(param{i}.basis.domain.min,param{i}.basis.domain.max,nknots(i)+2)';param{i}.basis.domain.max*ones(deg(i),1)],deg(i));
+        end
+            TB = TensorBasis(B,args);
 
 % construct LMI variables
 switch dep
     case 0 % X and Y dependent on constant and BRV parameters
-        [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'brv');
-        [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'brv');
+        [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
+        [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
     case 1 % X depends on constant parameters only
-        [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'constant');
-        [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'brv');
+        [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'constant','c');
+        [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
     case 2 % Y depends on constant parameters only
-        [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'brv');
-        [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'constant');
+        [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
+        [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'constant','c');
     otherwise
         error ('something wrong in script or addition feature not implemented');
 end
@@ -173,8 +194,6 @@ end
 %PD LMIs
 Q = [X, eye(nx); eye(nx), Y];
 
-switch sys.Ts
-    case {0,[]}
         for j = 1:n_pspecs
             if channel(j).performance == inf
                 T11 = A*X + X*A' - dXdt + Bu*Cc_hat + Cc_hat'*Bu';
@@ -220,10 +239,9 @@ switch sys.Ts
                 Dc_hat = zeros(nu,ny);                
             end
         end
-    otherwise
-         disp('LPV_unstructured_mix: discrete-time LMIs not implemented yet'); return;
-end
-
+                           % set Dc_hat = 0 to avoid constraint Dzw + Dzu*Dc_hat*Dyw == 0
+                            % incorporate this later...
+                Dc_hat = zeros(nu,ny);
 % LMI relaxations
 
 % degree elevations
@@ -273,7 +291,9 @@ comp_time_SDP = cputime - t_start - comp_time_parsing;
 
 %% extract solution info
 sol_info.coeffs_Q    = Q.coeff.dimension;
-%sol_info.coeffs_Term = Term.coeff.dimension;
+for j = 1:n_pspecs
+    sol_info.coeffs_Term{j} = Term{j}.coeff.dimension;
+end
 [pr,~]               = checkset(opti.yalmip_constraints); % primal residual
 if pr > -opts.tolerance
     sol_info.feasible  = 1;
@@ -295,12 +315,11 @@ if pr > -opts.tolerance
     sol_info.Cc_hat = sol.value(Cc_hat);
     sol_info.Dc_hat = sol.value(Dc_hat);
     K = [];
-%    sol_info.Term   = sol.value(Term);
 else
     sol_info.feas      = 0;
-    sol_info.objective = []; 
+    sol_info.objective = inf; 
     K = [];
-    error('PRIMAL SDP: infeasible problem'); return;
+    disp('PRIMAL SDP: infeasible problem'); return;
 end
 
 %% check solution
@@ -399,7 +418,342 @@ end
 
 % obtaining controller as an LFTmod object 
 K = LFTmod(M,Nu,Nl,eye(nx),param_new);
+K.Ts = sys.Ts;
 
+% store computation times
+sol_info.comp_time_parsing = comp_time_parsing;
+sol_info.comp_time_SDP     = comp_time_SDP;
+sol_info.comp_time_total   = cputime - t_start;
+
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [K,sol_info] = LPV_unstructured_mix_primal_DT(sys,ny,nu,alpha,channel,param,opts,dep)
+% References :
+
+% F. Amato, M. Mattei and A. Pironti.
+% Gain scheduled control for discrete-time systems depending on bounded
+% rate parameters.
+% International Journal of Robust and Nonlinear Control (2005); 15:473-494
+
+t_start = cputime; 
+
+import splines.*
+options = sdpsettings('solver',opts.solver,'verbose',opts.verbose,'mosek.MSK_DPAR_INTPNT_CO_TOL_REL_GAP',1e-6);
+opti = OptiSplineYalmip();
+
+% generalized plant matrices
+gen_sys = extract_generalized_plant(sys,nu,ny);
+
+%LPV matrices for each I/O channel
+n_pspecs = length(channel); %number of performance specs
+A = gen_sys.A; nx = gen_sys.nx; Bu = gen_sys.Bu; Cy = gen_sys.Cy; 
+[Bw,Cz,Dzw,Dzu,Dyw] = deal(cell(1,n_pspecs));
+[nw,nz] = deal(zeros(1,n_pspecs));
+for j = 1:n_pspecs
+    Bw{j}  = gen_sys.Bw(:,channel(j).In);
+    Cz{j}  = gen_sys.Cz(channel(j).Out,:);   
+    Dzw{j} = gen_sys.Dzw(channel(j).Out,channel(j).In); 
+    Dzu{j} = gen_sys.Dzu(channel(j).Out,:); 
+    Dyw{j} = gen_sys.Dyw(:,channel(j).In); 
+    nw(j)  = size(Bw{j},2);
+    nz(j)  = size(Cz{j},1);
+    if sys.Ts == 0 && opts.spec == 2
+    if isa(Dzw,'splines.Function')
+        data = Dzw.coeff.data;
+        if any(data(:)~=0)
+            disp('Continuous time, D-matrix closed-loop system nonzero => H2 performance infinite');
+            sol_info.feas      = 0;
+            sol_info.objective = [];
+            K = [];
+            return;
+        end
+    elseif any(Dzw(:)~=0)
+        disp('Continuous time, D-matrix closed-loop system nonzero => H2 performance infinite');
+        sol_info.feas      = 0;
+        sol_info.objective = []; 
+        K = [];
+        return;  
+    end
+    end
+end
+%% Optimization variables
+N = length(param);
+% determine degree and knots for each basis
+if     length(opts.var_deg) == 1; deg = opts.var_deg*ones(1,N);
+elseif length(opts.var_deg) == N; deg = opts.var_deg;
+else   error('opts.var_deg has incorrect dimension'); end
+if     length(opts.var_knots) == 1; nknots = opts.var_knots*ones(1,N);
+elseif length(opts.var_knots) == N; nknots = opts.var_knots;
+else   error('opts.var_knots has incorrect dimension'); end
+
+% construct TensorBasis
+        for i = 1:N
+            args{i} = param{i}.tensor_basis.arguments;
+            B{i} = BSplineBasis([param{i}.basis.domain.min*ones(deg(i),1);linspace(param{i}.basis.domain.min,param{i}.basis.domain.max,nknots(i)+2)';param{i}.basis.domain.max*ones(deg(i),1)],deg(i));
+        end
+            TB = TensorBasis(B,args);
+
+% construct LMI variables
+switch dep
+    case 0 % X and Y dependent on constant and BRV parameters
+        [X,dX] = build_Lyapmat(TB,param,nx,opti,'brv','d',deg,nknots);
+        [Y,dY] = build_Lyapmat(TB,param,nx,opti,'brv','d',deg,nknots);
+    case 1 % X depends on constant parameters only
+        [X,dX] = build_Lyapmat(TB,param,nx,opti,'constant','d');
+        [Y,dY] = build_Lyapmat(TB,param,nx,opti,'brv','d',deg,nknots);
+    case 2 % Y depends on constant parameters only
+        [X,dX] = build_Lyapmat(TB,param,nx,opti,'brv','d',deg,nknots);
+        [Y,dY] = build_Lyapmat(TB,param,nx,opti,'constant','d');
+    otherwise
+        error ('something wrong in script or addition feature not implemented');
+end
+switch dep
+    case {0,1}
+        Ac_hat = opti.Function(Y.tensor_basis,[nx,nx],'full');
+    case 2
+        Ac_hat = opti.Function(X.tensor_basis,[nx,nx],'full');
+end
+Bc_hat = opti.Function(TB,[nx,ny],'full');
+Cc_hat = opti.Function(TB,[nu,nx],'full');
+Dc_hat = zeros(nu,ny);
+for j = 1:n_pspecs
+    gam2{j} = opti.variable(1);
+    if channel(j).performance == 2
+        W{j} = opti.Function(TB,[nz(j),nz(j)],'full');
+    end
+end
+%PD LMIs
+Q = [X, eye(nx); eye(nx), Y];
+
+        for j = 1:n_pspecs
+             if channel(j).performance == inf
+                T11 = dX;
+                T12 = eye(nx);
+                T13 = A*dX+Bu*Cc_hat;
+                T14 = A+Bu*Dc_hat*Cy;
+                T15 = Bw{j}+Bu*Dc_hat*Dyw{j};
+                T16 = zeros(nx,nz(j));
+                T22 = dY;
+                T23 = Ac_hat;
+                T24 = dY*A+Bc_hat*Cy;
+                T25 = dY*Bw{j}+Bc_hat*Dyw{j};
+                T26 = zeros(nx,nz(j));
+                T33 = X;
+                T34 = eye(nx);
+                T35 = zeros(nx,nw(j));
+                T36 = (Cz{j}*dX+Dzu{j}*Cc_hat)';
+                T44 = Y;
+                T45 = zeros(nx,nw(j));
+                T46 = (Cz{j}+Dzu{j}*Dc_hat*Cy)';
+                T55 = gam2{j}*eye(nw(j));
+                T56 = (Dzw{j}+Dzu{j}*Dc_hat*Dyw{j})';
+                T66 = gam2{j}*eye(nz(j));
+
+                Term{j} = [T11 , T12 , T13 , T14 , T15 , T16;
+                        T12', T22 , T23 , T24 , T25 , T26;
+                        T13', T23', T33 , T34 , T35 , T36;
+                        T14', T24', T34', T44 , T45 , T46;
+                        T15', T25', T35', T45', T55 , T56;
+                        T16', T26', T36', T46', T56', T66];
+                Term{j} = - Term{j};
+            elseif channel(j).performance == 2
+                
+                T11 = dX;
+                T12 = eye(nx);
+                T13 = A*dX+Bu*Cc_hat;
+                T14 = A+Bu*Dc_hat*Cy;
+                T15 = Bw{j}+Bu*Dc_hat*Dyw{j};
+                T22 = dY;
+                T23 = Ac_hat;
+                T24 = dY*A+Bc_hat*Cy;
+                T25 = dY*Bw{j}+Bc_hat*Dyw{j};
+                T33 = X;
+                T34 = eye(nx);
+                T35 = zeros(nx,nw(j));
+                T44 = Y;
+                T45 = zeros(nx,nw(j));
+                T55 = gam2{j}*eye(nw(j));
+
+                Term1 = [T11 , T12 , T13 , T14 , T15;
+                        T12', T22 , T23 , T24 , T25;
+                        T13', T23', T33 , T34 , T35;
+                        T14', T24', T34', T44 , T45;
+                        T15', T25', T35', T45', T55];
+                T11 = W{j};
+                T12 = Cz{j}*dX+Dzu{j}*Cc_hat;
+                T13 = Cz{j}+Dzu{j}*Dc_hat*Cy;
+                T14 = Dzw{j}+Dzu{j}*Dc_hat*Dyw{j};
+                T22 = X;
+                T23 = eye(nx);
+                T24 = zeros(nx,nw(j));
+                T33 = Y;
+                T34 = zeros(nx,nw(j));
+                T44 = eye(nw);
+
+                Term2 = [T11 , T12 , T13 , T14;
+                        T12', T22 , T23 , T24;
+                        T13', T23', T33 , T34;
+                        T14', T24', T34', T44];
+
+                Term3 = trace(W{j}) - gam2{j};
+                Term{j} = blkdiag(Term1,-Term2,Term3);
+
+                            % set Dc_hat = 0 to avoid constraint Dzw + Dzu*Dc_hat*Dyw == 0
+                            % incorporate this later...
+                Dc_hat = zeros(nu,ny);
+             end           
+        end
+
+% LMI relaxations
+
+% degree elevations
+if any(opts.relax_deg)
+    if     length(opts.relax_deg) == 1; relax_deg = opts.relax_deg*ones(1,N);
+    elseif length(opts.relax_deg) == N; relax_deg = opts.relax_deg;
+    else   error('opts.relax_deg has incorrect dimension'); end
+    Q    = Q.degree_elevation(relax_deg,args);
+    for j = 1:n_pspecs
+    Term{j} = Term{j}.degree_elevation(relax_deg,args);
+    end
+end
+
+% midpoint refinements
+if any(opts.relax_mp)
+    if     length(opts.relax_mp) == 1; relax_mp = opts.relax_mp*ones(1,N);
+    elseif length(opts.relax_mp) == N; relax_mp = opts.relax_mp;
+    else   error('opts.relax_mp has incorrect dimension'); end
+    Q    = Q.midpoint_refinement(relax_mp,args);
+    for j = 1:n_pspecs
+    Term{j} = Term{j}.midpoint_refinement(relax_mp,args);
+    end
+end
+
+comp_time_parsing = cputime - t_start;
+
+% constraints
+constraints = {Q >= 0};
+for j = 1:n_pspecs
+    constraints = [constraints, {Term{j} <= 0}];
+    if alpha(j)==0
+       constraints = [constraints, {gam2{j} <= 1}]; 
+    end
+end
+
+%objective
+objective = alpha(:)'*[gam2{:}]'*opts.scaling_obj;
+
+%SolvetheSDP
+opti.minimize(objective)
+opti.subject_to(constraints)
+opti.solver('yalmip',struct('yalmip_options',options));
+
+sol = opti.solve();
+comp_time_SDP = cputime - t_start - comp_time_parsing;
+
+
+%% extract solution info
+sol_info.coeffs_Q    = Q.coeff.dimension;
+for j = 1:n_pspecs
+    sol_info.coeffs_Term{j} = Term{j}.coeff.dimension;
+end
+[pr,~]               = checkset(opti.yalmip_constraints); % primal residual
+if pr > -opts.tolerance
+    sol_info.feasible  = 1;
+    sol_info.objective = sol.value(objective);
+    switch opts.spec
+        case {2,inf}
+%             sol_info.gam2 = sol.value(gam2);
+    end
+    sol_info.X      = sol.value(X);
+    sol_info.Y      = sol.value(Y);
+    sol_info.dX     = sol.value(dX);
+    sol_info.dY     = sol.value(dY);
+    sol_info.Q      = sol.value(Q);
+    for j = 1:n_pspecs
+        sol_info.Term{j}   = sol.value(Term{j});
+    end
+    sol_info.Ac_hat = sol.value(Ac_hat);
+    sol_info.Bc_hat = sol.value(Bc_hat);
+    sol_info.Cc_hat = sol.value(Cc_hat);
+    sol_info.Dc_hat = sol.value(Dc_hat);
+    K = [];
+else
+    sol_info.feas      = 0;
+    sol_info.objective = inf; 
+    K = [];
+    error('PRIMAL SDP: infeasible problem'); return;
+end
+
+%% check solution
+for j = 1:prod(sol_info.Q.coeff.dimension)
+    min_eig(j) = min(eig(sol_info.Q.coeff.data(j))); 
+end
+sol_info.check_pos_Q = min(min_eig);
+for i = 1: n_pspecs
+    for j = 1:prod(sol_info.Term{i}.coeff.dimension)
+        max_eig(j) = max(eig(sol_info.Term{i}.coeff.data(j))); 
+    end
+    sol_info.check_neg_Term{i} = max(max_eig);    
+end
+%% CONTROLLER RECONTRUCTION
+
+% Extracting Lyapunov and slack variables
+X_ = sol_info.X;
+Y_ = sol_info.Y;
+dX_ = sol_info.dX;
+dY_ = sol_info.dY;
+A_ = sol_info.Ac_hat;
+B_ = sol_info.Bc_hat;
+C_ = sol_info.Cc_hat;
+D_ = sol_info.Dc_hat;
+
+u = size(sys.B,2); u = u + ((-nu+1):0);
+y = size(sys.C,1); y = y + ((-ny+1):0);
+
+PCy_ = sys.C(y,:);
+PBu_ = sys.B(:,u);
+PA_  = sys.A;
+
+if dep == 0     % controller depending on parameter and its derivative
+    M11 = zeros(nx);
+    M44 = Y_*X_;
+elseif dep == 1 % controller depending on parameter only: X constant
+    M11 = zeros(nx);
+    M44 = dY_*X_;
+elseif dep == 2 % controller depending on parameter only: Y constant
+    M11 = dX_*Y_;
+    M44 = zeros(nx);
+end
+
+nx = size(A_,1);
+Dt = D_;
+Ct = (C_ - D_*PCy_*X_);
+Bt = (B_ - Y_*PBu_*D_);
+At = (A_ - dY_*(PA_+PBu_*D_*PCy_)*dX_ - Bt*PCy_*dX_ - dY_*PBu_*Ct);
+
+nut = size(Bt,2);
+nyt = size(Ct,1);
+
+% Constructing LFT Matrices M,Nu and Nl                
+M = {M11      , eye(nx)     , zeros(nx,nut), zeros(nx)    ;...
+     zeros(nx), zeros(nx)   , zeros(nx,nut), eye(nx)      ;...
+     Ct       , zeros(nyt,nx), Dt           , zeros(nyt,nx);...
+     At       , zeros(nx)   , Bt           , M44         };
+Nu = eye(nx); 
+Nl = eye(nx);
+
+param_new = [];
+for i = 1:length(param)
+    if (param{i}.bounded)
+        param_new = [param_new,param{i}.add_parameter_derivative('d')];
+    else
+        param_new = [param_new,{param{i}}];
+    end
+end
+% obtaining controller as an LFTmod object 
+K = LFTmod(M,Nu,Nl,eye(nx),param_new);
+K.Ts = sys.Ts;
 % store computation times
 sol_info.comp_time_parsing = comp_time_parsing;
 sol_info.comp_time_SDP     = comp_time_SDP;

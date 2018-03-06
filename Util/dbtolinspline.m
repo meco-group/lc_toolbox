@@ -19,6 +19,7 @@ function spline_out = dbtolinspline(spline_in,noiknots,degree)
 %arguments as spline_in
 %   Detailed explanation goes here
 
+    check_optispline;
     import splines.*;
 
     if nargin == 1

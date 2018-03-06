@@ -16,7 +16,9 @@
 
 function [As,Bs,Cs,Ds,T,smileLPVmod] = smile_techniqueOC_spline( griddedMdl, splineBasis, schParam , ploton)
 
-import splines.*
+check_optispline;
+import splines.*;
+
 if nargin < 4
     ploton = false;
 end

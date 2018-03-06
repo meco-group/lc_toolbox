@@ -16,8 +16,9 @@
 
 function [nllsMdl] = nllsLPV( griddedFRFs, basisFcns, model, settings )
 
-meco_binaries('cpp_splines','develop')
-import splines.*
+check_optispline;
+import splines.*;
+
 schParam = SchedulingParameter(griddedFRFs.params_{1}, [min(griddedFRFs.params_{2}), max(griddedFRFs.params_{2})]);
 p_local = basisFcns.list_eval(griddedFRFs.params_{2})';
 

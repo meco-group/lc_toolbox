@@ -33,7 +33,21 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LPVDSSmod < AbstractDSSmod & Ab
         end
         
         function mod = gridme(self,varargin)
-            [grid,args] = makegrid(self,varargin{:});
+            function chk = isvalidgrid(grid)
+                isc = iscell(grid); 
+                hastwocol = size(grid,2) == 2;
+                if ~(hastwocol && isc); chk = false; return; end
+                containsparam = all(cell2mat(cellfun(@ischar, grid(:,1), 'un', 0)));
+                containsnumval = all(cell2mat(cellfun(@isnumeric, grid(:,2), 'un', 0)));
+                chk = isc && containsparam && containsnumval;
+            end
+            
+            if nargin>1 && isvalidgrid(varargin{1})
+                args = varargin{1}(:,1)';
+                grid = varargin{1}(:,2)';
+            else
+                [grid,args] = makegrid(self,varargin{:});
+            end
             [As,Bs,Cs,Ds,Es] = grid_eval(self,grid,args);
             
             % Make cellgrid of LTIDSSmodels

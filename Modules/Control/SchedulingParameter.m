@@ -1,3 +1,19 @@
+% This file is part of LCToolbox.
+% (c) Copyright 2018 - MECO Research Team, KU Leuven. 
+%
+% LCToolbox is free software: you can redistribute it and/or modify
+% it under the terms of the GNU Lesser General Public License as published 
+% by the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+% 
+% LCToolbox is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU Lesser General Public License for more details.
+% 
+% You should have received a copy of the GNU Lesser General Public License
+% along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
+
 classdef SchedulingParameter < splines.Function
     properties
         rate_
@@ -32,7 +48,7 @@ classdef SchedulingParameter < splines.Function
                     end
                     parameter.rate_ = rate;
                 case 2
-                    parameter.rate_ = [-inf, inf];
+                    parameter.rate_ = [0, 0];
                 otherwise
                     error(['SchedulingParameter expect 2 or 3 inputs: argument(string), range(interval), [rate(interval)], not compatible with ', num2str(nargin) ,'provided']);
             end
@@ -74,4 +90,6 @@ end
             [LIA,LOCB] = ismember(argsA,argsB);
         end
     end
+    
+
 end

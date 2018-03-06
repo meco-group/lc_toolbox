@@ -17,10 +17,6 @@
 
 clear all; clc; close all
 
-% load stuff
-meco_binaries('cpp_splines','develop');
-import splines.*
-
 example_type = 'uvar_bounded';
 
 %scheduling parameters

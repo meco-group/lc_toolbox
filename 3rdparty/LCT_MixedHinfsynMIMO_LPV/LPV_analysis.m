@@ -98,8 +98,11 @@ Dual = [];
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function sol_info = LPV_analysis_primal(sys,param,opts)
+
+check_optispline;
+import splines.*;
+
 t_start = cputime; 
-import splines.*
 options = sdpsettings('solver',opts.solver,'verbose',opts.verbose);
 opti = OptiSplineYalmip();
 gen_sys = extract_generalized_plant(sys,0,0);

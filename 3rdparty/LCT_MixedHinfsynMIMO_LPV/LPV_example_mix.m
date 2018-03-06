@@ -16,14 +16,10 @@
 
 clear all; clc; close all
 
-% load stuff
-meco_binaries('cpp_splines','develop');
-import splines.*
-
-        k1    = SchedulingParameter('k1',[10,16],0.2);
+k1    = SchedulingParameter('k1',[10,16],0.2);
 im2 = 11;        
-        %im2   = SchedulingParameter('im2',[0.25,1],0.5);
-        param = {k1};
+%im2   = SchedulingParameter('im2',[0.25,1],0.5);
+param = {k1};
 
 m1 = 10; k2 = 5; c1 = 0.2; c2 = 0.3; 
 A = [0 0 1 0; 0 0 0 1; -k1*(1/m1), k1*(1/m1), -(c1+c2)/m1, c2/m1; k1*im2, -(k1+k2)*im2, c2*im2, -c2*im2];

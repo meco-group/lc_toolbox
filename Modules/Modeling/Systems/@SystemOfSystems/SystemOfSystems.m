@@ -204,16 +204,16 @@ classdef SystemOfSystems < AbstractSystem
             
             % 4. Safe blockdiagonal
             function [blk,remove] = safeblkdiag(varargin)
-                try
+                 try
                     blk = blkdiag(varargin{:});
                     names = cellfun(@(x) x.name,varargin,'un',0);
                     blk.name = strjoin(names,'-');
                     remove = false;
-                catch
-                    warning('Some models cannot be combined');
-                    blk = [];
-                    remove = true;
-                end
+                 catch
+                     warning('Some models cannot be combined');
+                     blk = [];
+                     remove = true;
+                 end
             end
             [cont,remove] = cellfun(@(x)safeblkdiag(x{:}),content__,'UniformOutput',false);
             cont(cell2mat(remove)) = [];

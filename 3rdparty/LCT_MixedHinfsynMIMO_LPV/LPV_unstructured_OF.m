@@ -107,10 +107,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [K,sol_info] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,dep)
+    
+check_optispline;
+import splines.*;
 
 t_start = cputime; 
 
-import splines.*
 options = sdpsettings('solver',opts.solver,'verbose',opts.verbose);
 opti = OptiSplineYalmip();
 
@@ -440,9 +442,11 @@ function [K,sol_info] = LPV_unstructured_OF_primal_DT(sys,ny,nu,param,opts,dep)
 % rate parameters.
 % International Journal of Robust and Nonlinear Control (2005); 15:473-494
 
+check_optispline;
+import splines.*;
+
 t_start = cputime; 
 
-import splines.*
 options = sdpsettings('solver',opts.solver,'verbose',opts.verbose);
 opti = OptiSplineYalmip();
 
@@ -455,6 +459,14 @@ nx = gen_sys.nx; nz = gen_sys.nz; nw = gen_sys.nw;
 
 % Optimization variables
 N = length(param);
+
+% Taking care of parameter rates, if they are mentioned while defining
+% parameter, see References.
+for i = 1:N
+    if any(abs(param{i}.rate) >= 1)
+        error('You mentioned wrong bounds for rates of the any of the parameter for discrete time, it should be between -1 and 1, or do not put any');
+    end
+end
 
 % determine degree and knots for each basis
 if     length(opts.var_deg) == 1; deg = opts.var_deg*ones(1,N);

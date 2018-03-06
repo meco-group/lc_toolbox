@@ -30,7 +30,9 @@
 
 function varargout = lsimlpv(varargin)
 
-import splines.*
+check_optispline;
+import splines.*;
+
 %  ___________________
 % | 1. INPUT PARSING  |
 % |___________________|

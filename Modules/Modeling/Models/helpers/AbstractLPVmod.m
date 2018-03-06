@@ -107,7 +107,7 @@ classdef AbstractLPVmod
             if nargin == 1, varargin{1} = 5; end %std density
             
             % arguments %
-            if nargin < 3,
+            if nargin < 3
                 args = arguments(self); 
             else
                 args = varargin{2};

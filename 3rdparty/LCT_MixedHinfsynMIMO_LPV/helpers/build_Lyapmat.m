@@ -27,7 +27,10 @@ function [P,dPdt] = build_Lyapmat(basis,param,n,opti,dependency,c_or_d,varargin)
 %   P. Apkarian and R. J. Adams.
 %   Advanced Gain-Scheduling Techniques for Uncertain Systems
 %   IEEE Transactions on Control Systems Technology. 1998;6(1):21-32
-import splines.*
+
+check_optispline;
+import splines.*;
+
 % construct Lyapunov matrix
 switch c_or_d
     case 'c'

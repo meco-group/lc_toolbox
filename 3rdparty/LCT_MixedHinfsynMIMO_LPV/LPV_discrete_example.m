@@ -10,7 +10,7 @@
  Ts = 1/100; %100 Hz sampling frequency
  mu = 0.25;
   
- example_type = 3;
+ example_type = 2;
  switch example_type
      case 1
           p = SchedulingParameter('p',[0,1],0);
@@ -75,7 +75,7 @@ S = Channel(e/r,'Sensitivity');
 U = Channel(u/r,'Actuator Effort');
 T = Channel(y/r,'Compl Sensitivity');
 
-synthesis_type = 2;
+synthesis_type = 1;
 
 switch synthesis_type 
     case 1

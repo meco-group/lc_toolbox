@@ -73,7 +73,7 @@ As you can see, we needed a new Signal which we can construct via the `Signal()`
 
 ### 1.3. Parameters
 
-LCToolbox also supports linear parameter-varying (LPV) controller design. To this end, the SchedulingParameter class was introduced. Although it might sound complicated, it is just a parameter which you can use within your matrices. The only thing you have to do is supply a domain in which the value will remain, e.g. [-1,1] and possibly the maximal change over time, e.g. [-0.1,0.1]. Have a look at the code below: 
+LCToolbox also supports linear parameter-varying (LPV) controller design. To this end, the SchedulingParameter class was introduced. Such an object can be created through the function SchedulingParameter. Although it might sound complicated, it is just a parameter which you can use within your matrices. The only thing you have to do is supply a domain in which the value will remain, e.g. [-1,1] and possibly the maximal change over time, e.g. [-0.1,0.1]. Have a look at the code below: 
 
 ```matlab
 range = [-1,2];

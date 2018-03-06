@@ -30,7 +30,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
         %
         % Parameters:
         %  varargin :  
-        %   - for existing grid of modelss, use these as input arguments:
+        %   - for existing grid of models, use these as input arguments:
         %     - \c grid : cell representing the grid of models
         %     - \c params : cell, of which column 1 contains the name of
         %     the scheduling parameter (char) and column 2 contains a

@@ -362,8 +362,10 @@ classdef Solver
                 
                 assert(all(ismember(unique(norm.ch_p.in),exin,false)),'Contact the developers');
                 assert(all(ismember(unique(norm.ch_p.out),exout,false)),'Contact the developers');
-                ch.In{channel} = transpose(selection(unique(norm.ch_p.in),exin));
+%                ch.In{channel} = transpose(selection(unique(norm.ch_p.in),exin));
                 ch.Out{channel} = transpose(selection(unique(norm.ch_p.out),exout));
+                ch.In{channel} = selection(unique(norm.ch_p.in),exin);
+%                 ch.Out{channel} = selection(unique(norm.ch_p.out),exout);
             end
         end
     end

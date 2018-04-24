@@ -90,10 +90,10 @@ bode(Gnonp); hold on;
 % TO DO: extension to MIMO models
 
 %% fit a nominal parametric model
-opt1 = struct('nh',3,'nl',0,'Bh',3,'Bl',0,'GN',0,'cORd','d','FRFW',1./sqrt(diag.sampleTotalVariance));
+opt1 = struct('numh',3,'numl',0,'denh',3,'denl',0,'GN',0,'cORd','d','FRFW',1./sqrt(diag.sampleTotalVariance));
 opt2 = struct('maxIter',500,'relVar', 1e-20,'GN',0,'FRFW',1,'gradTol',1e-8,'sysInit',[]); % default
 opt = mergestruct(opt1,opt2);
-Gparam = param_ident('data',Gnonp,'method','nllsfdi','options',opt); 
+Gparam = param_ident('data',Gnonp,'method','nllsfdi','settings',opt); 
 bode(Gparam);
 
 %% derive uncertainty model

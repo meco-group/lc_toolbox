@@ -15,66 +15,126 @@
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
 classdef Solver_mixedHinfsynMIMO < Solver
-    %SOLVER_MIXEDHINFSYNMIMO solve problem with mixedHinfsynMIMO
-    %   Abstract solver implementation for the mixedHinfsynMIMO problem
+% Solver_mixedHinfsynMIMO defines a solver interface for \c mixedHinfsynMIMO.
         
     methods
         function self = Solver_mixedHinfsynMIMO(options)
-            % Set default options
-            self.options.gammasolver = 'mosek';
-            self.options.controllersolver = 'basiclmi';
+        % Constructor for Channel objects.
+        % 
+        % Parameters:
+        %  options: options that the user wants to pass to the solver
+        %
+        % Return values:
+        %  self: the solver interface @type Solver_mixedHinfsynMIMO 
+        
+            % Solver
+            fprintf('Solving with mixedHinfsynMIMO...\n\n');
             
+            % Default options
+            self.options.gammasolver.solver = 'mosek';
+            self.options.gammasolver.mosek.MSK_DPAR_ANA_SOL_INFEAS_TOL = 1e-8;
+            self.options.controllersolver.solver = 'basiclmi';
+
             if nargin > 0
                 self = setoptions(self,options);
             end
         end
-                
-        function self = solve(self,config,specs,vars)  
-            % Compute plant state-space
-            specs = specs.rescale('constr');
-            [P,ch] = self.plant(config,specs,vars);
+        
+        function self = solve(self,config,specs,vars)
+        % Parses all available information of the interface, calls the 
+        % solver \c mixedHinfsynMIMO and saves the results.
+        % 
+        % Parameters:
+        %  self: the solver interface @type Solver_mixedHinfsynMIMO
+        %  config: the control configuration @type SystemOfSystems
+        %  specs: specifications of the control problem @type
+        %  ControllerDesign
+        %  vars: \c cell containing the optimization variables @type cell
+        %
+        % Return values:
+        %  self: solver interface containing the solution (if properly
+        %  solved) and, if available, additional information @type
+        %  Solver_mixedHinfsynMIMO
+        
+            % Get output filters
+            specs = rescale(specs,'all');
+            [P,Wo,Wi,ch] = Solver_mixedHinfsynMIMO.plant(config,specs,vars);
+    
+            % Setup which channels are objectives and which are constraints
+            alpha = zeros(1,length(specs.performance)); 
+            alpha(1,1:specs.nobj) = 1;
             
-            % Information to the solver
-            alpha = zeros(length(specs.performance),1); % Setup which channels are objectives 
-            if(specs.nobj > 0) % Check if the problem is in fact an optimization problem
-                alpha(1:specs.nobj,1) = arrayfun(@(x) scale(x),specs.performance(1:specs.nobj));
-            end
-            
-            beta = zeros(length(specs.performance),1); % Setup which channels are objectives and which are constraints
-            if(length(specs.performance) - specs.nobj > 0) % Check if the problem has in fact constraints
-                beta(specs.nobj+1:end,1) = arrayfun(@(x) scale(x),specs.performance(specs.nobj+1:end));
-            end
-            
+            % Get number of controls and measurements
             ncont = length(specs.ctrl_in);
             nmeas = length(specs.ctrl_out);
-            P = balreal(std(P));
-            
-            % Compute the controller
+
             tic;
-            [K,gamma] = mixedHinfsynMIMO(P,nmeas,ncont,alpha,beta,ch,self.options);
+            stdP = std(P);
+            if isnumeric(Wo); Wo = ss(Wo); Wo.Ts = stdP.Ts; else; Wo = std(Wo); end
+            if isnumeric(Wi); Wi = ss(Wi); Wi.Ts = stdP.Ts; else; Wi = std(Wi); end
+            [K, gamma, ~] = mixedHinfsynMIMO(stdP,Wi,Wo,nmeas,ncont,alpha,double(~alpha),ch,self.options);
             self.info.time = toc;
-            K = balreal(K); % improve conditioning of sys_K
+            self.K = fromstd(K);
+            self.gamma = transpose(gamma(:,1)); 
+            self.mu = zeros(size(gamma)); 
+            self.solved = true;
             
             % rescale performance weights
             self.performance = specs.performance;
             if specs.nobj > 0
                 obj = 1:specs.nobj;
-                self.performance(obj) = dealscale(self.performance(obj),1./gamma(1,obj));
+                self.performance(obj) = self.performance(obj).*transpose(1./gamma(obj,2));
             end
-            
-            % Save solver output
-            self.K = fromstd(K);
-            self.gamma = gamma;
-            self.mu = zeros(size(gamma));
-            self.solved = true;
         end
     end
     
     methods (Static)
+        function [P,Wo,Wi,ch] = plant(config,specs,vars)
+        % Parses the generalized plant in the form that is required by
+        % \c mixedHinfsynMIMO. 
+        % 
+        % Parameters:
+        %  config: the control configuration @type SystemOfSystems
+        %  specs: specifications of the control problem @type
+        %  ControllerDesign
+        %  vars: \c cell containing the optimization variables @type cell
+        %
+        % Return values:
+        %  P: generalized plant @type numlti
+        %  Wo: unstable output weighting filter @type numlti
+        %  Wi: unstable input weighting filter @type numlti
+        %  ch: structure defining the channels corresponding to the
+        %  specifications @type struct
         
-        function [P,ch] = plant(config,specs,vars)
-            % translate into alternative ('new') channel representation
-            [P,wspecs] = Solver.plant(config,specs,vars);
+            Wo = [];
+            Wi = [];
+            stabspecs = specs;
+            
+            % Set up unstable weights
+            for k = 1:length(specs.performance)
+                
+                [GSo,GNSo] = stabsep(fromstd(specs.performance(k).W_out));
+                [GSi,GNSi] = stabsep(fromstd(specs.performance(k).W_in));
+                if GNSo.nx == 0 % stable weight
+                    Wo = blkdiag(Wo,eye(size(specs.performance(k).W_out,1)));
+                elseif GSo.nx == 0 % unstable weight
+                    Wo = blkdiag(Wo,specs.performance(k).W_out);
+                    stabspecs.performance(k).W_out = eye(size(specs.performance(k).W_out,1));
+                else
+                    error('One of your output weights contains both stable and unstable poles, which I cannot separate. Make all poles unstable in case you want a weight with integrators and make all poles stable otherwise.')
+                end
+                if GNSi.nx == 0
+                    Wi = blkdiag(Wi,eye(size(specs.performance(k).W_in,1)));
+                elseif GSi.nx == 0
+                    Wi = blkdiag(Wi,specs.performance(k).W_in);
+                    stabspecs.performance(k).W_in = eye(size(specs.performance(k).W_in,1));
+                else
+                    error('One of your input weights contains both stable and unstable poles, which I cannot separate. Make all poles unstable in case you want a weight with integrators and make all poles stable otherwise.')
+                end
+            end
+                
+            [P,wspecs] = Solver.plant(config,stabspecs,vars,false);
+            
             ch = Solver.channels(wspecs);   
             for i = 1:length(ch.In)
                 [r,~] = find(ch.In{i});
@@ -86,13 +146,19 @@ classdef Solver_mixedHinfsynMIMO < Solver
         end
         
         function cap = capabilities()
+        % Returns the capabilities of \c mixedHinfsynMIMO. 
+        % 
+        % Return values: 
+        %  cap: capabilities of \c mixedHinfsynMIMO @type struct
+        
             cap.inout = 2;
             cap.norm = Inf;
             cap.constraints = true;
-            cap.unstable = false;
+            cap.unstable = true;
             cap.improper = false;
             cap.parametric = false;
             cap.fixedorder = false;
         end
     end
 end
+

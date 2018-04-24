@@ -119,7 +119,7 @@ load('excitations.mat');    % we load the original signals: otherwise the
         T = Channel(y/r,'Complementary sensitivity');
         
         MS = Weight.DC(2);
-        WS = Weight.LF(20,4,-100);
+        WS = Weight.LF(5,1,-100);
         WT = W1;
     
         obj = [WS*S];

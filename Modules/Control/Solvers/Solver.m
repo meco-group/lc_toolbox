@@ -213,7 +213,7 @@ classdef Solver
             % Check for gridded models
             cconf = content(remove_empty(unpack(config)));
             isg = cellfun(@(x)isa(content(x,1),'Gridmod'),cconf);
-            if any(isg);
+            if any(isg)
                 g = cconf{isg}; gmod = g.content(1);
                 g.empty(); g.add(gmod.grid_{1});
                 cell_solver = Solver.select(config,specs,vars,options);
@@ -223,7 +223,7 @@ classdef Solver
                                             'constraints',{false,true,true,true,true,true,true,false,true},...
                                             'inout',{0,1,2,2,2,2,2,0,0},...
                                             'norm',{Inf,Inf,Inf,Inf,[2;Inf],[2;Inf],Inf,[2;Inf],[2;Inf]},...
-                                            'unstable',{false,false,false,true,false,false,false,false,false},...
+                                            'unstable',{false,false,true,true,false,false,false,false,false},...
                                             'improper',{false,false,false,false,false,false,false,false,false},...
                                             'parametric',{false,false,false,false,false,false,false,true,true},...
                                             'order',{-1,-1,-1,-1,Inf,Inf,Inf,-1,-1});
@@ -270,7 +270,7 @@ classdef Solver
             end
         end
         
-        function [GP,wspecs] = plant(config,specs,vars)
+        function [GP,wspecs] = plant(config,specs,vars,minimal)
             % This function gather up informations from the control
             % configuration. 
             % 
@@ -285,6 +285,13 @@ classdef Solver
             % inputs and regulated outputs. @type SystemOfModels
             % wspecs : specifications for controller design to be fed in he
             % solver routine. @type ControllerDesign
+            % minimal : the number of exogenous inputs and performance
+            % outputs is minimal by default (duplicates are removed); if
+            % not desired, set false @type logical
+            
+            if nargin < 4
+                minimal = true;
+            end
             
             % 1. make the openloop -> remove the variables
             [~,r] = cellfun(@empty,vars,'un',0);
@@ -307,8 +314,7 @@ classdef Solver
                     connections = [connections;sysout.in == chan.out];
                     chan.out = sysout.out;
                     wspecs.performance(k).ch_p.out = sysout.out;
-                end
-                if specs.performance(k).isinput()
+                elseif specs.performance(k).isinput()
                     sysin = IOSystem(specs.performance(k).W_in);
                     weights = [weights,{sysin}];
                     connections = [connections;sysin.out == chan.in];
@@ -328,8 +334,10 @@ classdef Solver
                 GP.add(c);
             end
             
-            exog_in_ = unique(exog_in_);
-            exog_out_ = unique(exog_out_);
+            if minimal
+                exog_in_ = unique(exog_in_);
+                exog_out_ = unique(exog_out_);
+            end
             GP = GP([exog_out_;specs.ctrl_out],[exog_in_;specs.ctrl_in]);
             
             % 4. Set removed content back
@@ -351,7 +359,8 @@ classdef Solver
             ch.H2 = []; ch.Hinf = []; channel = 0;
             exin = unique(wspecs.in); exout = unique(wspecs.out);
             
-            for norm = wspecs.performance                channel = channel + 1;
+            for norm = wspecs.performance
+                channel = channel + 1;
                 if isH2(norm)
                     ch.H2 = [ch.H2 channel];
                 elseif isHinf(norm)
@@ -362,10 +371,8 @@ classdef Solver
                 
                 assert(all(ismember(unique(norm.ch_p.in),exin,false)),'Contact the developers');
                 assert(all(ismember(unique(norm.ch_p.out),exout,false)),'Contact the developers');
-%                ch.In{channel} = transpose(selection(unique(norm.ch_p.in),exin));
                 ch.Out{channel} = transpose(selection(unique(norm.ch_p.out),exout));
                 ch.In{channel} = selection(unique(norm.ch_p.in),exin);
-%                 ch.Out{channel} = selection(unique(norm.ch_p.out),exout);
             end
         end
     end

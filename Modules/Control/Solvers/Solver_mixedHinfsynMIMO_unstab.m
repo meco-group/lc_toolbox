@@ -98,4 +98,3 @@ classdef Solver_mixedHinfsynMIMO_unstab < Solver
         end
     end
 end
-

@@ -18,7 +18,7 @@ classdef Solver_Hinfsyn < Solver
     % Solver_Hinfsyn defines a solver interface for \c hinfsyn.
     % \c hinfsyn solves the following problem:
     %
-    % \image html gp_hinfsyn.svg 
+    % \image html gp_Hinfsyn.svg 
     %
     % @f[
     % \begin{aligned}

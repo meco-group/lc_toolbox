@@ -83,7 +83,7 @@ classdef Norm < Specification
         function b = isHinf(self)
         % Checks whether the norm is an @f$\mathcal{H}_\infty@f$ norm.
         %
-        % Return values:.
+        % Return values:
         %  b : true if the norm is an @f$\mathcal{H}_\infty@f$ norm @type logical
             b = (self.p == Inf);
         end
@@ -91,7 +91,7 @@ classdef Norm < Specification
         function b = isH2(self)
         % Checks whether the norm is an @f$\mathcal{H}_2@f$ norm.
         %
-        % Return values:.
+        % Return values:
         %  b : true if the norm is an @f$\mathcal{H}_2@f$ norm @type logical
             b = (self.p == 2);
         end
@@ -99,7 +99,7 @@ classdef Norm < Specification
         function b = isoutput(self)
         % Checks whether the norm has a non-static output weight.
         %
-        % Return values:.
+        % Return values:
         %  b : true if the norm has a non-static output weight @type logical
             b = arrayfun(@(x) ~isnumeric(x.W_out),self);
         end
@@ -107,7 +107,7 @@ classdef Norm < Specification
         function b = isinput(self)
         % Checks whether the norm has a non-static input weight.
         %
-        % Return values:.
+        % Return values:
         %  b : true if the norm has a non-static input weight @type logical
             b = arrayfun(@(x) ~isnumeric(x.W_in),self);
         end
@@ -115,7 +115,7 @@ classdef Norm < Specification
         function b = isstable(self)
         % Checks whether the weights are stable.
         %
-        % Return values:.
+        % Return values:
         %  b : true if both input and output weights are stable @type logical
             b = (~isoutput(self) || isstable(self.W_out)) && (~isinput(self) || isstable(self.W_in));
         end

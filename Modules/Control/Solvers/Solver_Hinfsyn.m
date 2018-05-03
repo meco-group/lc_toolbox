@@ -15,20 +15,34 @@
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
 classdef Solver_Hinfsyn < Solver
-    %SOLVER_HINFSYN Implementation of abstract solver class for hinfsyn
-    %   Implementation of abstract solver class for hinfsyn
+    % Solver_Hinfsyn defines a solver interface for \c hinfsyn.
+    % \c hinfsyn solves the following problem:
+    %
+    % \image html gp_hinfsyn.svg 
+    %
+    % @f[
+    % \begin{aligned}
+    % & \underset{K}{\text{minimize}} & & \gamma \\\
+    % & \text{subject to} & & \left\lVert T\left(\frac{z}{w}\right)\right\rVert_\infty \leq \gamma\\\
+    % & & & T \text{ is stable}
+    % \end{aligned}
+    % @f]
+    %
+    % @f$P@f$ should be LTI, proper and stabilizable by @f$K@f$. 
+    % 
+    % See \c hinfsyn (MATLAB's Robust Control Toolbox) for the syntax and for more details.
         
     methods
         function self = Solver_Hinfsyn(options)
-            % Constructor for Solver_Hinfsyn objects
-            %
-            % Parameters: 
-            % options : may have external options provided to the solver
-            %
-            % Return values:
-            % self : options
+        % Constructor for Solver_Hinfsyn objects.
+        % 
+        % Parameters:
+        %  options: options that the user wants to pass to the solver
+        %
+        % Return values:
+        %  self: the solver interface @type Solver_Hinfsyn
             
-            self.options.METHOD = 'lmi';
+            self.options.METHOD = 'lmi'; % default
             
             if nargin > 0
                 self = setoptions(self,options);
@@ -36,6 +50,20 @@ classdef Solver_Hinfsyn < Solver
         end
         
         function self = solve(self,config,specs,vars)
+        % Parses the control problem such that it can be interpreted by \c
+        % hinfsyn and calls the solver. 
+        % 
+        % Parameters:
+        %  self: the solver interface @type Solver_Hinfsyn
+        %  config: the control configuration @type SystemOfSystems
+        %  specs: specifications of the control problem @type
+        %  ControllerDesign
+        %  vars: \c cell containing the optimization variables @type cell
+        % 
+        % Return values: 
+        %  self: Solver object (hopefully) containing a solution to the
+        %  control problem @type Solver_Hinfsyn
+        
             % Compute plant state-space
             specs = rescale(specs,'all');
             P = Solver.plant(config,specs,vars);
@@ -49,7 +77,7 @@ classdef Solver_Hinfsyn < Solver
             K = balreal(K); % improve conditioning of sys_K
             
             % rescale performance weights
-            self.performance = specs.performance.*(1./gamma);
+            self.performance = cellfun(@(x) {x*(1/gamma)}, specs.performance);
             
             % Save solver output
             self.K = fromstd(K);

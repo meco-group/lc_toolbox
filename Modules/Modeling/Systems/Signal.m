@@ -356,7 +356,7 @@ classdef(InferiorClasses = {?zpk,?ss,?tf}) Signal
         end
         
         function b = isequal(s1,s2)
-        % Checks whether to signals are equal.
+        % Checks whether two signals are equal.
         % Overloads MATLAB's \c isequal() for Signal objects.
         %
         % @note \c isequal checks for the same size and the same

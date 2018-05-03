@@ -15,20 +15,43 @@
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
 classdef Gridsolver < Solver
-    %GRIDSOLVER Summary of this class goes here
-    %   Detailed explanation goes here
+    % Gridsolver allows to easily solve a grid of control problems, for
+    % example to compare a gain-scheduled controller with a parametrized
+    % LPV controller. 
     
     properties
-        cell_solver
+        cell_solver     % cell of appropriate Solver objects @type cell
     end
     
     methods
         function self = Gridsolver(cell_solver,options)
+        % Constructor for Gridsolver objects.
+        % 
+        % Parameters:
+        %  cell_solver: the grid of Solver objects @type cell
+        %  options: options that the user wants to pass to the solvers of the grid elements @type struct
+        %
+        % Return values:
+        %  self: the Gridsolver object @type Gridsolver
+        
             self.cell_solver = cell_solver;
             self.options = options;
         end
         
         function self = solve(self,config,specs,vars)
+        % Parses the control problem for every subproblem in the grid such
+        % that it can be solved.
+        % 
+        % Parameters:
+        %  self: the solver interface @type Gridsolver
+        %  config: the control configuration @type SystemOfSystems
+        %  specs: specifications of the control problem @type
+        %  ControllerDesign
+        %  vars: \c cell containing the optimization variables @type cell
+        %
+        % Return values:
+        %  self: the Solver object (hopefully) containing the solutions for every subproblem @type Gridsolver
+        
             function [K,H,gamma,mu,performance,solved,info] = single_solve(solver,model,specs,vars)
                 solution = solve(solver,model,specs,vars);
                 K = solution.K;
@@ -63,33 +86,13 @@ classdef Gridsolver < Solver
             g.empty();
             g.add(gmod);
         end
-        
-        function list = expand(self)
-            function entry = makeentry(solver,k,h,h0,g,m,p,s,i,o)
-                entry = solver;
-                entry.K = k;
-                
-                c = SystemOfModels(h0.in,h0.out);
-                c.add(h);
-                entry.H = c;
-                
-                entry.gamma = g;
-                entry.mu = m;
-                entry.performance = p;
-                entry.solved = s;
-                entry.info = i;
-                entry.options = o;
-            end
-            
-            list = cellfun(@(k,h,g,m,p,s,i) makeentry(self.cell_solver,k,h,self.H,g,m,p,s,i,self.options), ...
-                       self.K.grid_(:), self.H.content(1).grid_(:), self.gamma(:), self.mu(:), ...
-                       self.performance(:), self.solved(:), self.info(:), 'un',0);
-        end
     end
     
     methods (Static)
-        function cap = capabilities()
-            error('this function should not be called for a gridsolver');
+        function capabilities()
+        % Dummy implementation for the abstract method of Solver. Has no
+        % meaning for Gridsolver. 
+            error('Gridmod is not a direct solver interface and, thus, has no capabilities on itself.');
         end
     end
 end

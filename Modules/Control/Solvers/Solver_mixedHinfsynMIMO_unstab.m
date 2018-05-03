@@ -35,19 +35,19 @@ classdef Solver_mixedHinfsynMIMO_unstab < Solver
         
         function self = solve(self,config,specs,vars)
             % Get output filters
-            specs = rescale(specs,'all');
+            specs = rescale(specs,'constr+bound');
             [P,Wu,ch] = Solver_mixedHinfsynMIMO_unstab.plant(config,specs,vars);
     
             % Setup which channels are objectives and which are constraints
             alpha = zeros(1,length(specs.performance)); 
-            alpha(1,1:specs.nobj) = 1;
+            alpha(1,1:specs.nobj) = cell2mat(cellfun(@(x) scale(x), specs.performance(1:specs.nobj), 'un', 0))';
             
             % Get number of controls and measurements
             ncont = length(specs.ctrl_in);
             nmeas = length(specs.ctrl_out);
 
             tic;
-            if isnumeric(Wu); Wu = fromstd(Wu); end;
+            if isnumeric(Wu); Wu = fromstd(Wu); end
             [K,gamma] = mixedHinfsyn_MIMO(balreal(std(P)),std(Wu),nmeas,ncont,alpha,ch,self.options);
             self.info.time = toc;
             self.K = fromstd(K);
@@ -59,7 +59,7 @@ classdef Solver_mixedHinfsynMIMO_unstab < Solver
             self.performance = specs.performance;
             if specs.nobj > 0
                 obj = 1:specs.nobj;
-                self.performance(obj) = self.performance(obj).*transpose(1./gamma(obj,1));
+                self.performance(obj) = Norm.dealscale(self.performance(obj),num2cell(1./self.gamma(obj)));
             end
         end
     end
@@ -72,15 +72,16 @@ classdef Solver_mixedHinfsynMIMO_unstab < Solver
             stabspecs = specs;
             % set up unstable weights
             for k = 1:length(specs.performance)
-                [GS,GNS] = stabsep(specs.performance(k).W_out);
+                [GS,GNS] = stabsep(specs.performance{k}.W_out);
                 if GNS.nx == 0
-                    Wu = blkdiag(Wu,eye(size(specs.performance(k).W_out,1)));
+                    Wu = blkdiag(Wu,eye(size(specs.performance{k}.W_out,1)));
                 elseif GS.nx == 0
-                    Wu = blkdiag(Wu,specs.performance(k).W_out);
-                    stabspecs.performance(k).W_out = eye(size(specs.performance(k).W_out,1));
+                    Wu = blkdiag(Wu,specs.performance{k}.W_out);
+                    stabspecs.performance{k} = setWout(stabspecs.performance{k},eye(size(specs.performance{k}.W_out,1)));
                 else
                     error('Are you kidding me? I detected both stable and unstable poles in one weight.\n In case you want an integrator weight, make all poles unstable. Otherwise, make everything stable.')
                 end
+                assert(isstable(specs.performance{k}.W_in),'mixedHinfsynMIMO_unstab does not support unstable input weighting filters. Try mixedHinfsynMIMO instead.');
             end
                 
             [P,wspecs] = Solver.plant(config,stabspecs,vars);

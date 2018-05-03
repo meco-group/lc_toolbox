@@ -17,7 +17,7 @@
 classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
 % Channel objects are used to represent an input-output relation between
 % signals. These could then be used to specify performance objectives in
-% terms of H-infinity and H-2 norms. 
+% terms of @f$\mathcal{H}_\infty@f$ and @f$\mathcal{H}_2@f$norms. 
     
     properties
         in;         % the input signal of the channel @type Signal
@@ -56,7 +56,7 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         % Defines the norm of the channel.
         % 
         % Parameters:
-        %  varargin : options that are passed to the \c norm construction,
+        %  varargin : options that are passed to the \c Norm construction,
         %  first part is a \c double defining which norm you're using (\c 2 or
         %  \c Inf)
         %
@@ -64,7 +64,7 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         %  n : the norm @type Norm 
             n = Norm(self);
             if nargin > 1
-                n = norm(n,varargin{1});
+                n = setnorm(n,varargin{1});
             end
         end
                 
@@ -85,21 +85,27 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         end
         
         function n = mtimes(tf1,tf2)
-        % Return the product of the norms of both input arguments.
+        % Returns the product of the norms of both input arguments.
         % Overloads MATLAB's \c * operator for Channel objects.
         % 
         % Only of of both input arguments is allowed to be a Channel
         % objects. The product of two channels has no meaning.
         %
         % Parameters: 
-        %  tf1 : either a channel, a standard MATLAB model (\c numlti) or a
+        %  tf1 : either a channel, a model (\c numlti or Model) or a
         %  scalar (\c double) 
-        %  tf2 : either a channel, a standard MATLAB model (\c numlti) or a
+        %  tf2 : either a channel, a model (\c numlti or Model) or a
         %  scalar (\c double) 
         %
         % Return values:
         %  n : norm of the product of both input arguments @type Norm
-            n = Norm(tf1,tf2);
+            if isnumeric(tf1) && isscalar(tf1)
+                n = tf1*Norm(tf2);
+            elseif isnumeric(tf2) && isscalar(tf2)
+                n = tf2*Norm(tf1);
+            else
+                n = Norm(tf1,tf2);
+            end
         end
         
         function b = eq(tf1,tf2)
@@ -148,45 +154,84 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         % Sorts the subsignals of the input and output signal based on their identifiers.  
         % Overloads MATLAB's \c sort for Channel objects.
         %
-        % Parameters:
-        %  tf1 : first channel @type Channel
-        %  tf2 : second channel @type Channel
-        %
         % Return values:
         %  sorted : same channel with sorted subsignals @type Channel
             v = arrayfun(@(x)arrayfun(@(y)sum([y.in.UUID y.out.UUID]),x),self);
             [~,i] = sort(v);
             sorted = self(i);
         end
-        
-        function [b,io] = abstractEquality(tf1,tf2)
-            if((length(tf1.in)~=length(tf2.in))||(length(tf1.out)~=length(tf2.out)))
-                b = false;
-                io = [tf1.in;...
-                      tf1.out]; 
-            else
-                s = [tf1.in  tf2.in;...
-                     tf1.out tf2.out];            
-                b = isequal(s(:,1),s(:,2));
-                io = s(:,1);
-            end
-        end
-        
+
         function [tf] = vertcat(varargin)
-        % Concatenates two Channels vertically.
+        % Concatenates channels vertically. Only possible if the
+        % channels have the same input signal(s), e.g. @f$ \left[w
+        % \rightarrow z_1 ; w \rightarrow z_2\right]@f$ becomes @f$ w \rightarrow \left[\begin{array}{l} z_1 \\ z_2 \end{array}\right]@f$ 
         % Overloads MATLAB's \c vertcat() for Channel objects.
         % 
         % Parameters:
         %  varargin : list of channels
         %
         % Return values:
-        %  tf : channel stacking all inputs and outputs of the channels in the same order as provided by the user @type Channel
-            in = []; out = [];
+        %  tf : channel stacking all outputs in the same order as provided by the user, the input signal remains the same @type Channel
+        
+            assert(all(cellfun(@(x,y) isequal(x.in,y.in), varargin, circshift(varargin,1))),'Vertical concatenation of channels is only possible if the input signals are equal. Use blkdiag instead.');
+            out_ = [];
             for k = 1:length(varargin)
-                in = [in;varargin{k}.in];
-                out = [out;varargin{k}.out];
+                out_ = [out_;varargin{k}.out];
             end
-            tf = Channel(in,out,varargin{1}.name);
+            if length(varargin)>1
+                tf = Channel(varargin{1}.in,out_,['[' strjoin(cellfun(@(x) {x.name}, varargin), '; ') ']']);
+            else
+                tf = varargin{1};
+            end
+        end
+        
+        function [tf] = horzcat(varargin)
+        % Concatenates channels horizontally. Only possible if the
+        % channels have the same output signal(s), e.g. @f$ \left[w_1
+        % \rightarrow z ; w_2 \rightarrow z\right]@f$ becomes @f$\left[\begin{array}{l} w_1 \\ w_2 \end{array}\right] \rightarrow z @f$  
+        % Overloads MATLAB's \c horzcat() for Channel objects.
+        % 
+        % Parameters:
+        %  varargin : list of channels
+        %
+        % Return values:
+        %  tf : channel stacking all inputs in the same order as provided by the user, the output signal remains the same @type Channel
+        
+            assert(all(cellfun(@(x,y) isequal(x.out,y.out), varargin, circshift(varargin,1))),'Horizontal concatenation of channels is only possible if the output signals are equal. Use blkdiag instead.');
+            in_ = []; 
+            for k = 1:length(varargin)
+                in_ = [in_;varargin{k}.in];
+            end
+            if length(varargin)>1
+                tf = Channel(in_,varargin{1}.out,['[' strjoin(cellfun(@(x) {x.name}, varargin), ', ') ']']);
+            else
+                tf = varargin{1};
+            end
+        end
+        
+        function [tf] = blkdiag(varargin)
+        % Concatenates channels diagonally, i.e. stacking both input and
+        % output signals, e.g. @f$ \left[w_1
+        % \rightarrow z_1 ; w_2 \rightarrow z_2\right]@f$ becomes @f$ \left[\begin{array}{l} w_1 \\ w_2 \end{array}\right] \rightarrow \left[\begin{array}{l} z_1 \\ z_2 \end{array}\right]@f$ 
+        % Overloads MATLAB's \c blkdiag() for Channel objects.
+        % 
+        % Parameters:
+        %  varargin : list of channels
+        %
+        % Return values:
+        %  tf : channel stacking both all inputs and all outputs @type Channel
+        
+            in_ = [];
+            out_ = [];
+            for k = 1:length(varargin)
+                in_ = [in_;varargin{k}.in];
+                out_ = [out_;varargin{k}.out];
+            end
+            if length(varargin)>1
+                tf = Channel(in_,out_,['blkdiag(' strjoin(cellfun(@(x) {x.name}, varargin), ', ') ')']);
+            else
+                tf = varargin{1};
+            end
         end
         
         function varargout = subsref(self,s)
@@ -225,6 +270,48 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
                 varargout = {builtin('subsref',self,s(:))};
             end
         end
+        
+        function [lia,locb] = ismember(self,other)
+        % Checks whether the channels of a Channel array are in another
+        % Channel array.
+        % Overloads MATLAB's \c ismember() for Channel objects.
+        % 
+        % Parameters:
+        %  self: array of channels that is searched for in other @type Channel
+        %  other: array of channels that is checked for the presence of channels of self @type Channel
+        %
+        % Return values:
+        %  lia: 1 where the channels of self are found in other @type logical
+        %  locb: lowest index values such that self = other(locb) @type logical
+        
+            assert(isa(self,'Channel') && isa(other,'Channel'), 'ismember only works on two Channel objects.');
+            if size(self,1)==1 && size(other,1)==1
+            elseif size(self,1)==1 && size(other,2)==1
+                other = other';
+            elseif size(self,2)==1 && size(other,1)==1
+                self = self';
+            elseif size(self,2)==1 && size(other,2)==1
+                self = self'; other = other';
+            else
+                error('ismember only works on vectors of Channel objects.');
+            end
+
+            lia = zeros(size(self));
+            locb = zeros(size(self));
+            for i=1:length(self)
+                found = false; j = 1;
+                while j <= length(other) && ~found
+                    if self(i)==other(j)
+                        found = true;
+                        lia(i) = 1;
+                        locb(i) = j;
+                    end
+                    j=j+1;
+                end
+            end
+            
+        end
+        
     end
     
 end

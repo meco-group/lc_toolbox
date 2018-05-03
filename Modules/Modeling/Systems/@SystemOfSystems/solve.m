@@ -40,16 +40,16 @@ end
 % 2. Construct a controller design problem
 specs = ControllerDesign();
 % objectives
+if ~isa(obj, 'cell') && ~isempty(obj); obj = {obj}; elseif isempty(obj); obj = {}; end
+assert(all(cellfun(@(x) isa(x,'Norm'), obj)), 'Objectives can only be of type Norm.');
 specs = specs.addobjective(obj);
 % constraints
-if iscell(constr)
-    orders = cellfun(@(x)isa(x,'Order'),constr);
-    assert(sum(orders)<=1,'Multiple order constraints are not yet implemented');
-    if any(orders), specs.order = order(constr{orders}); constr(orders) = []; end
-    specs = specs.addconstraint(horzcat(constr{:}));
-else
-    specs = specs.addconstraint(constr);
-end
+if ~isa(constr, 'cell') && ~isempty(constr); constr = {constr}; elseif isempty(constr); constr = {}; end
+assert(all(cellfun(@(x) isa(x,'NormConstraint') || isa(x,'Order'), constr)),'Constraints can only be of type NormConstraint or Order.');
+orders = cellfun(@(x)isa(x,'Order'),constr);
+assert(sum(orders)<=1,'Multiple order constraints are not allowed.');
+if any(orders), specs.order = order(constr{orders}); constr(orders) = []; end
+specs = specs.addconstraint(constr);
 % control in and outputs
 ctrl_in_ = cellfun(@(x)x.out,vars,'UniformOutput',false);
 specs.ctrl_in = vertcat(ctrl_in_{:});
@@ -62,15 +62,16 @@ solver = Solver.select(config,specs,vars,options);
 solver = solver.solve(config,specs,vars);
 restore(r);
 
-% 5. Add the solution to the variable and 
+% 5. Add the solution to the variable
 assert(length(vars) == 1,'Solving multiple controllers at once not yet implemented');
 K = solver.K;
-if ~isfield(options,'controller_name');
+if ~isfield(options,'controller_name')
     K.name = ['controller' num2str(vars{1}.numod())];
 else    
     K.name = options.controller_name;
 end
 vars{1}.add(K);
+solver.K.name = K.name;
 
 % 6. Add designed closed loop and specs to solver object
 [~,r] = vars{1}.empty();

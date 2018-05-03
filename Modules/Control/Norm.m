@@ -14,35 +14,36 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-classdef(InferiorClasses = {}) Norm
-    %NORM
-    %   Supports the definition of a multivariate signal norm. A norm
-    %   consists of a weighting function W, an abstract transferfunction TF
-    %   indicating the input-output relation to be weighted. W_Place
-    %   indicates if the weight is an input(1) or output(0) weight.
-    %   When dealing with a multivariable norm, W, W_place and TF are
-    %   cellarrays of equal size.
-    %   type specifies the type of the norm and can either be 'inf' or '2'.
-    %   multiplier specifies an extra multiplier for the norm and can be
-    %   used to weight the norm (e.g. in a constraint) or readjust the
-    %   magnitude after calculating an optimal 'gamma' after optimization
-    %   of the objective.
-    %   Concatenation of 2 norms in the vertical direction results in a new
-    %   norm. Horizontal concatenation of 2 norms results in an array of
-    %   separate norms. Adding norms is allowed only when in an objective.
-    %   Norm <= alpha results in a weighting of the norm with a factor
-    %   alpha and is only allowed when defining a constraint.
+classdef Norm < Specification
+    % A Norm defines the weighted norm (@f$\mathcal{H}_2@f$ or @f$\mathcal{H}_\infty@f$) of a certain performance
+    % channel as an objective, or as a constraint (becomes NormConstraint) 
+    % when an upper bound is imposed.
     
     properties
-        p           = Inf   % Type of the norm (2 or Inf)
-        W_in        = [];   % Input weight of the channel ch_p
-        W_out       = [];   % Output weight for the channel ch_p
-        ch_p        = [];   % Input and output of the channel
-        wscale      = [];   % Scaling of the weight in the optimization objective 
+        p           = Inf   % type of the norm: 2 for @f$\mathcal{H}_2@f$ norm, Inf for @f$\mathcal{H}_\infty@f$ norm (default)
+        W_in        = [];   % input weight of the channel ch_p
+        W_out       = [];   % output weight for the channel ch_p
+        ch_p        = [];   % input and output of the channel
+        wscale      = [];   % scaling of the weight in the optimization objective 
     end
     
     methods
+        
         function self = Norm(varargin)
+        % Constructor for Norm objects.
+        % 
+        % Parameters:
+        %   varargin : should have on of these four structures:
+        %   -# an output weight (\c numlti or Model), followed by the performance
+        %      Channel, and the input weight (\c numlti or Model) as last argument 
+        %   -# an output weight (\c numtli or Model), followed by the
+        %      performance Channel
+        %   -# the performance Channel, followed by an input weight (\c numlti or Model)
+        %   -# a performance Channel (no weighting)
+        %
+        % Return values:
+        %  self : the weighted norm @type Norm
+            
             if nargin > 3
                 self.p = varargin{end};
                 varargin(end) = [];
@@ -76,36 +77,65 @@ classdef(InferiorClasses = {}) Norm
             
             assert((size(self.W_in,1)==length(self.ch_p.in)),'Input weight dimensions do not correspond to the channel');
             assert((size(self.W_out,2)==length(self.ch_p.out)),'Output weight dimensions do not correspond to the channel');
+            
         end
         
         function b = isHinf(self)
+        % Checks whether the norm is an @f$\mathcal{H}_\infty@f$ norm.
+        %
+        % Return values:.
+        %  b : true if the norm is an @f$\mathcal{H}_\infty@f$ norm @type logical
             b = (self.p == Inf);
         end
         
         function b = isH2(self)
+        % Checks whether the norm is an @f$\mathcal{H}_2@f$ norm.
+        %
+        % Return values:.
+        %  b : true if the norm is an @f$\mathcal{H}_2@f$ norm @type logical
             b = (self.p == 2);
         end
         
         function b = isoutput(self)
+        % Checks whether the norm has a non-static output weight.
+        %
+        % Return values:.
+        %  b : true if the norm has a non-static output weight @type logical
             b = arrayfun(@(x) ~isnumeric(x.W_out),self);
         end
         
         function b = isinput(self)
+        % Checks whether the norm has a non-static input weight.
+        %
+        % Return values:.
+        %  b : true if the norm has a non-static input weight @type logical
             b = arrayfun(@(x) ~isnumeric(x.W_in),self);
         end
         
         function b = isstable(self)
+        % Checks whether the weights are stable.
+        %
+        % Return values:.
+        %  b : true if both input and output weights are stable @type logical
             b = (~isoutput(self) || isstable(self.W_out)) && (~isinput(self) || isstable(self.W_in));
-%             b = isstable(self.W_out) && isstable(self.W_in);
         end
                 
         function b = isparametric(self)
+        % Checks whether the weights are parameter-dependent. 
+        %
+        % Return values:
+        %  b : true if the weights are parameter-dependent @type logical
             b = false;
             if ~isnumeric(self.W_in), b = b | isparametric(self.W_in); end
             if ~isnumeric(self.W_out), b = b | isparametric(self.W_out);end
         end
         
         function s = scale(self)
+        % Returns the scale of the norm, e.g. @f$\alpha@f$ for
+        % @f$\alpha \|\cdot\|_{2/\infty}@f$.
+        %
+        % Return values:
+        %  s : the scale factor of the norm @type double
             if length(self) == 1
                 s = 1;
                 if ~isempty(self.wscale)
@@ -116,12 +146,42 @@ classdef(InferiorClasses = {}) Norm
             end
         end
         
-        function n = le(n,v)
-            n = dealscale(n);
-            n = n*(1/v);
+        function n = lt(n,v)
+        % Creates a NormConstraint based on a Norm by the operator <. 
+        % Overloads MATLAB's \c < operator for Norm objects. 
+        %
+        % Parameters:
+        %   n : the norm that is constrained @type Norm
+        %   v : the upper bound on the norm @type double
+        %
+        % Return values:
+        %  s : the constraint @type NormConstraint
+            n = le(n,v);
+        end
+        
+        function nc = le(n,v)
+        % Creates a NormConstraint based on a Norm by the operator <=. 
+        % Overloads MATLAB's \c <= operator for Norm objects. 
+        %
+        % Parameters:
+        %   n : the norm that is constrained @type Norm
+        %   v : the upper bound on the norm @type double
+        %
+        % Return values:
+        %  s : the constraint @type NormConstraint
+            nc = NormConstraint(n,v);
         end
         
         function n = mtimes(a,b)
+        % Multiplies a norm with a scalar or a weight. 
+        % Overloads MATLAB's \c * for Norm objects. 
+        %
+        % Parameters:
+        %   a : either a Norm, a weight (\c numlti or Model), or a scalar 
+        %   b : either a Norm, a weight (\c numlti or Model), or a scalar 
+        %
+        % Return values:
+        %  n : the scaled or weighted norm @type Norm
             if(isa(a,'Norm'))
                 n = a; v = b; pre = true;
             else
@@ -144,222 +204,348 @@ classdef(InferiorClasses = {}) Norm
         end
         
         function n = times(a,b)
+        % Multiplies a norm with a scalar or a weight. 
+        % Overloads MATLAB's \c .* for Norm objects. 
+        %
+        % Parameters:
+        %   a : either a Norm, a weight (\c numlti or Model), or a scalar 
+        %   b : either a Norm, a weight (\c numlti or Model), or a scalar 
+        %
+        % Return values:
+        %  n : the scaled or weighted norm @type Norm
             n = arrayfun(@(x,y)mtimes(x,y),a,b,'un',0);
             n = horzcat(n{:});
         end
         
-        function self = dealscale(self,scale)
-            if length(self) == 1
-                if nargin < 2
-                    scale = self.wscale;
-                    self.wscale = [];
-                end
-                assert(any(length(scale)==[0,1]), 'Scale must be of the same size as norm');
-            
-                if ~isempty(scale)
-                    if isinput(self) && isoutput(self)
-                        self.W_in = self.W_in*sqrt(scale);
-                        self.W_out = self.W_out*sqrt(scale);
-                    elseif isinput(self)
-                        self.W_in = self.W_in*scale;
-                    elseif isoutput(self)
-                        self.W_out = self.W_out*scale;
-                    else
-                        self.W_out = fromstd(eye(length(self.ch_p.out))*scale);
-                    end
+        function self = vertcat(varargin)
+        % Stacks multiple norms with the same inputs into one norm. 
+        % Overloads MATLAB's \c vertcat for Norm objects. 
+        %
+        % Parameters:
+        %   varargin: set of Norm objects 
+        %
+        % Return values:
+        %  n : the stacked norm @type Norm
+            if all(cellfun(@(x) isa(x,'Norm'),varargin))
+                self = varargin{1};
+                for k = 2:nargin
+                    self = stackvert(self,varargin{k});
                 end
             else
-                if nargin < 2
-                    for k = 1:length(self)
-                        self(k) = dealscale(self(k));
-                    end
-                else
-                    for k = 1:length(self)
-                        self(k) = dealscale(self(k),scale(k));
-                    end
+                self = vertcat@Specification(varargin{:});
+            end
+        end
+        
+        function self = horzcat(varargin)
+        % Stacks multiple norms with the same outputs into one norm. 
+        % Overloads MATLAB's \c horzcat for Norm objects. 
+        %
+        % Parameters:
+        %   varargin: set of Norm objects 
+        %
+        % Return values:
+        %  n : the stacked norm @type Norm
+            if all(cellfun(@(x) isa(x,'Norm'),varargin))
+                self = varargin{1};
+                for k = 2:nargin
+                    self = stackhorz(self,varargin{k});
+                end
+            else
+                self = horzcat@Specification(varargin{:});
+            end
+        end
+        
+        function self = blkdiag(varargin)
+        % Stacks multiple norms into one norm. 
+        % Overloads MATLAB's \c blkdiag for Norm objects. 
+        %
+        % Parameters:
+        %   varargin: set of Norm objects 
+        %
+        % Return values:
+        %  n : the stacked norm @type Norm
+            self = stack(varargin{:});
+        end
+        
+        function self = stackvert(self,other)
+        % Stacks multiple norms with the same inputs into one norm. Related to Channel::vertcat.
+        %
+        % Parameters:
+        %   self: the first norm @type Norm
+        %   other: the second norm @type Norm
+        %
+        % Return values:
+        %  self : the stacked norm @type Norm
+            if isempty(self)
+                self = other;
+            elseif isempty(other)
+                return; 
+            else
+                assert(sscomp(self.W_in,other.W_in), 'If you want to concatenate norms vertically, their input weights should be equal. Use blkdiag instead.');
+                if self.p ~= other.p
+                    error('Cannot stack 2 norms of different types.');
+                else 
+                    assert(self.W_in==other.W_in);
+                    ch_p_ = [self.ch_p;other.ch_p];
+                    W_out_ = blkdiag(self.W_out,other.W_out);
+                    W_in_ = self.W_in;
+                    self = Norm(ch_p_);
+                    self.W_out = W_out_;
+                    self.W_in = W_in_;
+                    self = setP(self,other.p);
                 end
             end
         end
-                
-        %% Norm stacking function
-        function self = vertcat(varargin)
-            self = varargin{1};
-            for k = 2:nargin
-                self = stack(self,varargin{k});
+        
+        function self = stackhorz(self,other)
+        % Stacks multiple norms with the same outputs into one norm. Related to Channel::horzcat.
+        %
+        % Parameters:
+        %   self: the first norm @type Norm
+        %   other: the second norm @type Norm
+        %
+        % Return values:
+        %  self : the stacked norm @type Norm
+            if isempty(self)
+                self = other;
+            elseif isempty(other)
+                return; 
+            else
+                assert(sscomp(self.W_out,other.W_out), 'If you want to concatenate norms horizontally, their output weights should be equal. Use blkdiag instead.');
+                if self.p ~= other.p
+                    error('Cannot stack 2 norms of different types.');
+                else 
+                    ch_p_ = [self.ch_p other.ch_p];
+                    W_out_ = self.W_out;
+                    W_in_ = blkdiag(self.W_in,other.W_in);
+                    self = Norm(ch_p_);
+                    self.W_out = W_out_;
+                    self.W_in = W_in_;
+                    self = setP(self,other.p);
+                end
             end
         end
         
         function self = stack(self,other)
-            % Stack to norms together
-            if self.p ~= other.p
-                error('cannot concatenate 2 norms of different types.');
-            else % norms can be concatenated
-                ch_p_ = Channel([self.ch_p.in;other.ch_p.in],[self.ch_p.out;other.ch_p.out]);
-                W_out_ = blkdiag(self.W_out,other.W_out);
-                W_in_ = blkdiag(self.W_in,other.W_in);
-                self = Norm(ch_p_);
-                self.W_out = W_out_;
-                self.W_in = W_in_;
-                self = setP(self,other.p);
+        % Stacks multiple norms into one norm. Related to Channel::blkdiag.
+        %
+        % Parameters:
+        %   self: the first norm @type Norm
+        %   other: the second norm @type Norm
+        %
+        % Return values:
+        %  self : the stacked norm @type Norm
+            if isempty(self)
+                self = other;
+            elseif isempty(other)
+                return; 
+            else
+                if self.p ~= other.p
+                    error('Cannot stack 2 norms of different types.');
+                else 
+                    ch_p_ = blkdiag(self.ch_p, other.ch_p);
+                    W_out_ = blkdiag(self.W_out,other.W_out);
+                    W_in_ = blkdiag(self.W_in,other.W_in);
+                    self = Norm(ch_p_);
+                    self.W_out = W_out_;
+                    self.W_in = W_in_;
+                    self = setP(self,other.p);
+                end
             end
         end
         
-        function self = norm(self,p)
+        function self = setnorm(self,p)
+        % Sets the norm type. 
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   p: the norm type (2 or Inf) @type double
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
             if nargin > 1
                 self = setP(self,p);
             end
         end
         
-        function [norms,performances] = unstack(self,performance)
-            if all(self.isoutput())
-                [norms,performances] = unstackout(self,performance);
+        function self = getnorm(self)
+        % Returns itself (used for the sake of simplicity). 
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %
+        % Return values:
+        %  self : the norm @type Norm
+        end
+        
+        function self = setWout(self,W_out)
+        % Sets the output weight of the norm.
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   W_out: the output weight of the norm @type Model
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
+            self.W_out = W_out; 
+        end
+        
+        function self = setWin(self,W_in)
+        % Sets the input weight of the norm.
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   W_in: the input weight of the norm @type Model
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
+            self.W_in = W_in; 
+        end
+        
+        function self = setin(self,signal)
+        % Sets the input signals of the norm channel.
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   signal: the input signals of the norm channel @type Signal
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
+            self.ch_p.in = signal;
+        end
+        
+        function self = setout(self,signal)
+        % Sets the output signals of the norm channel.
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   signal: the output signals of the norm channel @type Signal
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
+            self.ch_p.out = signal;
+        end
+        
+        function self = setchannel(self,ch)
+        % Sets the channel of the norm.
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   ch: the channel of the norm @type Channel
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
+            self.ch_p = ch;
+        end
+        
+        function ch = getchannel(self)
+        % Returns the channel of the norm.
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %
+        % Return values:
+        %  ch : the channel of the norm @type Channel
+            ch = self.ch_p;
+        end
+        
+        function p = normtype(self)
+        % Returns the norm type (2 or Inf).
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %
+        % Return values:
+        %  self : the norm type (2 or Inf)
+            p = self.p;
+        end
+        
+        function sum = plus(varargin)
+        % Returns a set of Norm objects as a cell.
+        %
+        % Parameters:
+        %  varargin : can contain all Norm objects and cells
+        %  containing a set of Norm objects 
+        %
+        % Return values:
+        %  c : cell containing all norms @type cell
+            isnorm = cellfun(@(x) isa(x,'Norm'), varargin);
+            iscellofnorms = cellfun(@(x) isa(x,'cell') && all(cellfun(@(y) isa(y,'Norm'),x)), varargin);
+            
+            if any(~(isnorm | iscellofnorms)) 
+                sum = plus@Specification(varargin{:}); 
             else
-                [norms,performances] = unstackin(self,performance);
-            end
-        end
-        
-        function narray = plus(n1,n2)
-            narray = [n1,n2];
-        end
-        
-        function [w,b] = weight(self,out,in)
-            assert(length(out)==1 && length(in)==1,'Only implemented for siso channels');
-            if length(self) == 1
-                self = combine(self);
-                w = {};
-                b = false;
-                [lio,loco] = ismember(self.ch_p.out,out);
-                [lii,loci] = ismember(self.ch_p.in,in);
-                if all(lii) && all(lio)
-                    if isinput(self) && isoutput(self)
-                        assert(all([size(wout),size(win)]==1),'This function only works for siso');
-                        w = {self.W_out(:,loco)*self.W_in(loci,:)};
-                        b = true;
-                    elseif isinput(self)
-                        w = {self.W_in(loci,:)};
-                        b = true;
-                    elseif isoutput(self)
-                        w = {self.W_out(:,loco)};
-                        b = true;
-                    end
-                end
-            else
-                [w,b] = arrayfun(@(x)weight(x,out,in),self,'un',0);
-                w = horzcat(w{:}); b = any(horzcat(b{:}));
-            end
-        end
-        
-        function [w,b] = invweight(self,out,in)
-            [w,b] = weight(self,out,in);
-            if b
-                w = cellfun(@inv,w,'un',0);
-            end
-        end
-        
-        function [w,b] = sigma(self,out,in,varargin)
-            [w,b] = weight(self,out,in); f = {};
-            if b
-                [sv,f] = cellfun(@(x)sigma(x,varargin{:}),w,'un',0);
-                w = cellfun(@(x,y)FRDmod(x(1,:),y),sv,f,'un',0);
-            end
-        end
-        
-        function [w,b] = invsigma(self,out,in,varargin)
-            [w,b] = sigma(self,out,in,varargin{:});
-            if b
-                w = cellfun(@inv,w,'un',0);
-            end
-        end
-        
-        function self = combine(self)
-            function [c,S] = getS(a)
-                [c,~,ic] = unique(a);
-                S = double(cell2mat(arrayfun(@(x)eq(x,ic),1:length(c),'un',0)))';
-            end
-            if numel(self) == 1
-                [self.ch_p.in,Si] = getS(self.ch_p.in);
-                if isinput(self)
-                    self.W_in = Si*self.W_in;
+                norms = varargin(isnorm);
+                if ~isempty(varargin(iscellofnorms))
+                    unpacked_norms = vertcat(varargin{iscellofnorms});
                 else
-                    self.W_in = eye(length(self.ch_p.in));
+                    unpacked_norms = cell(1,0);
                 end
-                [self.ch_p.out,So] = getS(self.ch_p.out);
-                if isoutput(self) 
-                    self.W_out = self.W_out*transpose(So);
-                else
-                    self.W_out = eye(length(self.ch_p.out));
-                end
-            else
-                c = arrayfun(@combine,self,'un',0);
-                self = horzcat(c{:});
+            
+                sum = [norms(:) ; unpacked_norms(:)];
             end
         end
     end
         
     methods(Access=private)        
         function self = setP(self,p)
+        % Sets the norm type. 
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %   p: the norm type (2 or Inf) @type double
+        %
+        % Return values:
+        %  self : the resulting norm @type Norm
             if (p==2)||(p==inf)
                 self.p = p;
             else
-                error('System norm should be 2 or inf');
+                error('System norm should be 2 or Inf.');
             end
         end
-        
-                
-%         function self = stackout(self,other)
-%             newout = setdiff(other.TF.out,self.TF.out);
-%             self.TF.out = [self.TF.out;newout];
-% 
-%             self.W = blkdiag(self.W,ss(zeros(length(other.TF.in),length(newout))));
-%             [~,i] = ismember(other.TF.out,self.TF.out);
-%             self.W((length(self.TF.in)+1):end,i) = other.W;
-%             
-%             self.TF.in = [self.TF.in;other.TF.in];
-%         end
-%         
-%         function self = stackin(self,other)
-%             self = transpose(stackout(transpose(self),transpose(other)));
-%         end
-        
-        function [norms,performances] = unstackout(self, performance)
-            if size(self.W,2)>1
-                self = self.unify();
-                active = entrynorm(self.W) > eps;
-                N = size(active,2);
+    end
+    
+    methods(Static)
+        function self = dealscale(self,scale)
+        % Includes the scale of the norm in the weights and resets the
+        % norm's scale to 1 (or empty). Is a static method since it is also
+        % possible to call it on cells. 
+        %
+        % Parameters:
+        %   self: the norm (\c Norm), or a cell of norms (\c cell)
+        %   scale: optional scale, which the current scale is multiplied
+        %   with; 1 if omitted (\c double or \c cell)
+        %
+        % Return values:
+        %  self : the same (set of) norm(s), but with the scale included in
+        %  the weights (\c Norm or \c cell)
 
-                % allocate memory
-                norms(1,N) = Norm();
-                performances = cell(N,1);
-
-                for k = 1:N % iterate over columns
-                    % Save part of the weight as new norm
-                    norms(1,k) = Norm(Channel(self.TF.in(active(:,k)),self.TF.out(k)), self.W(active(:,k),k), self.position, self.p);
-                    if ~isempty(performance)
-                        performances{k,1} = performance(k,:);
-                    end
-                end
+            if nargin < 2
+                scale = num2cell(ones(size(self)));
             else
-                norms = self;
-                performances = {performance};
+                assert(isa(scale,'cell') && length(scale)==length(self), 'scale should be a cell with as many scales as norms.');
             end
-        end
-        
-        function [norms,performances] = unstackin(self, performance)
-            [norms,performances] = unstackout(transpose(self),performance);
-            norms = transpose(norms);
-        end
-        
-        function self = transpose(self)
-            if length(self)>1
-                for k=1:length(self)
-                    self(k) = transpose(self);
-                end
-            else
-                t = self.TF.in;
-                self.TF.in = self.TF.out;
-                self.TF.out = t;
 
-                self.W = transpose(self.W);
+            if isa(self,'cell')
+                self = cellfun(@(x,y) {Norm.dealscale(x,{y})}, self, scale);
+            else
+                assert(isa(self,'Norm'), 'dealscale can only operate on Norm objects.');
+                if ~isempty(self.wscale)
+                    scale = self.wscale*scale{:};
+                else
+                    scale = scale{:};
+                end
+                if isinput(self) && isoutput(self)
+                    self.W_in = self.W_in*sqrt(scale);
+                    self.W_out = self.W_out*sqrt(scale);
+                elseif isinput(self)
+                    self.W_in = self.W_in*scale;
+                elseif isoutput(self)
+                    self.W_out = self.W_out*scale;
+                else
+                    self.W_out = fromstd(eye(length(self.ch_p.out))*scale);
+                end 
+                self.wscale = [];
             end
         end
     end

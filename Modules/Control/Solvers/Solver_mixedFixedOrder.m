@@ -24,7 +24,7 @@ classdef Solver_mixedFixedOrder < Solver
     % \begin{aligned}
     % & \underset{K}{\text{minimize}} & & \sum_i \alpha_i\gamma_i + \sum_j \alpha_j\mu_i \\\
     % & \text{subject to} & & \left\lVert T\left(\frac{z_i}{w_i}\right)\right\rVert_\infty \leq \gamma_i, \quad i \text{ is an } \mathcal{H}_\infty \text{ objective}\\\
-    % & & & \left\lVert T\left(\frac{z_j}{w_j}\right)\right\rVert_2 \leq \mu_i, \quad j \text{ is an } \mathcal{H}_2 \text{ objective} \\\
+    % & & & \left\lVert T\left(\frac{z_j}{w_j}\right)\right\rVert_2 \leq \mu_j, \quad j \text{ is an } \mathcal{H}_2 \text{ objective} \\\
     % & & & \left\lVert T\left(\frac{z_k}{w_k}\right)\right\rVert_\infty \leq 1, \quad k \text{ is an } \mathcal{H}_\infty \text{ constraint} \\\
     % & & & \left\lVert T\left(\frac{z_l}{w_l}\right)\right\rVert_2 \leq 1, \quad l \text{ is an } \mathcal{H}_2 \text{ constraint} \\\
     % & & & T \text{ is stable} \\\

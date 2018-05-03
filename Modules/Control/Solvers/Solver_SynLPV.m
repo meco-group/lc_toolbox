@@ -22,7 +22,7 @@ classdef Solver_SynLPV < Solver
     %
     % @f[
     % \begin{aligned}
-    % & \underset{K}{\text{minimize}} & & \gamma \\\
+    % & \underset{K(\mathbf{p})}{\text{minimize}} & & \gamma \\\
     % & \text{subject to} & & \left\lVert T\left(\frac{z}{w}\right)\right\rVert_\infty \leq \gamma, \quad \forall \mathbf{p} \in \mathcal{P} \\\
     % & & & T \text{ is stable for a user-defined set of trajectories } \mathcal{P}
     % \end{aligned}

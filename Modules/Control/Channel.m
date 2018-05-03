@@ -164,7 +164,7 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         function [tf] = vertcat(varargin)
         % Concatenates channels vertically. Only possible if the
         % channels have the same input signal(s), e.g. @f$ \left[w
-        % \rightarrow z_1 ; w \rightarrow z_2\right]@f$ becomes @f$ w \rightarrow \left[\begin{array}{l} z_1 \\ z_2 \end{array}\right]@f$ 
+        % \rightarrow z_1 ; w \rightarrow z_2\right]@f$ becomes @f$ w \rightarrow \left[\begin{array}{l} z_1 \\ z_2 \end{array}\right]@f$. 
         % Overloads MATLAB's \c vertcat() for Channel objects.
         % 
         % Parameters:
@@ -188,7 +188,7 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         function [tf] = horzcat(varargin)
         % Concatenates channels horizontally. Only possible if the
         % channels have the same output signal(s), e.g. @f$ \left[w_1
-        % \rightarrow z , w_2 \rightarrow z\right]@f$ becomes @f$\left[\begin{array}{l} w_1 \\ w_2 \end{array}\right] \rightarrow z @f$  
+        % \rightarrow z , w_2 \rightarrow z\right]@f$ becomes @f$\left[\begin{array}{l} w_1 \\ w_2 \end{array}\right] \rightarrow z @f$.  
         % Overloads MATLAB's \c horzcat() for Channel objects.
         % 
         % Parameters:
@@ -212,7 +212,7 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         function [tf] = blkdiag(varargin)
         % Concatenates channels diagonally, i.e. stacking both input and
         % output signals, e.g. @f$ \text{blkdiag}(w_1
-        % \rightarrow z_1, w_2 \rightarrow z_2)@f$ becomes @f$ \left[\begin{array}{l} w_1 \\ w_2 \end{array}\right] \rightarrow \left[\begin{array}{l} z_1 \\ z_2 \end{array}\right]@f$ 
+        % \rightarrow z_1, w_2 \rightarrow z_2)@f$ becomes @f$ \left[\begin{array}{l} w_1 \\ w_2 \end{array}\right] \rightarrow \left[\begin{array}{l} z_1 \\ z_2 \end{array}\right]@f$. 
         % Overloads MATLAB's \c blkdiag() for Channel objects.
         % 
         % Parameters:

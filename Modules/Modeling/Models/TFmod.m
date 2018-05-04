@@ -18,9 +18,24 @@ function sys = TFmod(varargin)
 % Creates a model based on transfer function data.
 % LCToolbox counterpart of MATLAB's \c tf().
 
+
+if (all(cellfun(@isnumeric,varargin)) || any(cellfun(@iscell,varargin)))
 tfsys = tf(varargin{:});
 [A,B,C,D,E,Ts] = dssdata(tfsys);
 sys = DSSmod(A,B,C,D,E,Ts);
+else
+    if nargin <4 
+        Ts = 0;
+    elseif nargin < 3
+        error('Not enough arguments');
+    else
+        Ts = varargin{4};
+    end
+    num = varargin{1};
+    den = varargin{2};
+    param = varargin{3};
+    sys = tf2sspar(num,den,param,Ts);
+end
 
 % % TODO: spline implementation
 % switch nargin
@@ -36,4 +51,44 @@ sys = DSSmod(A,B,C,D,E,Ts);
 % end
 
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [G] = tf2sspar(num,den,param,Ts)
+%UNTITLED2 Summary of this function goes here
+%   Detailed explanation goes here
 
+[mnum,nnum] = size(num);
+[mden,n] = size(den);
+A = [];B = [];C = []; D = [];
+param = param;
+Ts = Ts;
+
+if mnum > 1
+    num = num';
+end
+if mden > 1
+    den = den';
+end
+if isnumeric(den(1))
+num = [zeros(mnum,n-nnum) num]/den(1);
+else
+num = [zeros(mnum,n-nnum) num]/den(1).coeff.data(1);
+end
+if ~isempty(num)
+    D = num(:,1);
+else
+    D = [];
+end
+if isnumeric(den(1))
+den = den(2:n)/den(1);
+else
+den = den(2:n)/den(1).coeff.data(1);
+end
+A = [-den; eye(n-2,n-1)];
+B = eye(n-1,1);
+if mnum > 0
+    C= num(:,2:n) - num(:,1) * den;
+else
+    C = [];
+end
+G = DSSmod(A,B,C,D,eye(size(A,1)),param,Ts);
+end

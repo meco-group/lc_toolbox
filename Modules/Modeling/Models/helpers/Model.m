@@ -100,6 +100,11 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
         end
         
         function product = mtimes(self,other)
+            
+            if isa(self,'Channel') || isa(other,'Channel')
+                product = Norm(self,other);
+            else
+            
             assert(isa(self,'Model') || isa(self,'numlti') || isnumeric(self),'Both terms should be models.');
             assert(isa(other,'Model') || isa(other,'numlti') || isnumeric(other),'Both terms should be models.');
             
@@ -115,6 +120,7 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
             product = product.model();
             product = product(one.out,two.in);
             product = product.content(1);
+            end
         end
        
        

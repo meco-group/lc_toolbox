@@ -47,7 +47,7 @@ classdef Weight
 
             dc = 1/dc; % Change the dc gain to the inverse  
             W = zpk([],[],dc);
-            if(~isempty(Ts))
+            if ~(isempty(Ts) || Ts==0)
                 W = c2d(W,Ts,'Tustin');
             end
         end
@@ -78,7 +78,7 @@ classdef Weight
             %  function @type tf
             
             [dc_mode,wco_mode,Ts,remainder] = Weight.parseVarargin(varargin{:});
-            
+            par = wco;
             switch(wco_mode)
                 case 'Hz'
                     wco = wco*2*pi;
@@ -94,9 +94,19 @@ classdef Weight
                     A = zeros(1,order+1); A(1) = 1;
                     switch(rolloff)
                         case 'LF'
-                            W = tf(B,A);
+                            switch isnumeric(wco)
+                                case 0
+                                    W = TFmod(B,A,par,Ts);
+                                case 1
+                                    W = tf(B,A);
+                            end
                         case 'HF'
-                            W = tf(A,B);
+                            switch isnumeric(wco)
+                                case 0
+                                    W = TFmod(A,B,par,Ts);
+                                case 1
+                                    W = tf(A,B);
+                            end
                     end
 
                 case 1
@@ -125,12 +135,17 @@ classdef Weight
                     end  
                     
                     [b,a] = butter2(order,w0,fpass,'s');
-                    W = flatgain*tf(b,a);
+                    switch isnumeric(wco)
+                        case 0 
+                            W = flatgain*TFmod(b,a,par,Ts);
+                        case 1
+                            W = flatgain*tf(b,a);
+                    end
                 otherwise
                     error('RO cannot handle more than 1 numeric input');
             end
             
-            if(~isempty(Ts))
+            if ~(isempty(Ts) || Ts==0)
                 W = c2d(W,Ts,'Tustin');
             end
         end
@@ -185,6 +200,31 @@ classdef Weight
             end
         end
         
+        function [W] = PV(fco,order,varargin)
+            % Constructs a weight to enforce parameter varying weights.
+            %
+            % Parameters:
+            %  fco : the desired cross-over frequency @type double
+            %  order : the order/steepness or the roll-off @type double
+            %  varargin : may contain 
+            %   - \c ''Ts'' or \c ''fs'' followed by a double specifying the sampling time 
+            %   - char specifying how \c fco should be interpreted;
+            %  either \c ''rad/s'' or \c ''Hz'' (default)
+            %   - double specifying the gain at high frequencies, \c 0 if
+            %   omitted (improper weight)
+            %   - char specifying how the latter value should be interpreted;
+            %  either \c ''linear'' or \c ''db'' (default)
+            % 
+            % Return values:
+            %  W : standard MATLAB transfer function defining the weighting
+            %  function @type tf
+            if(nargin>2)
+                W = Weight.RO(fco,order,'HF',varargin{1},'db','Hz');
+            else
+                W = Weight.RO(fco,order,'HF','db','Hz');
+            end
+        end
+        
         function [dc_mode,wco_mode,Ts,remainder] = parseVarargin(varargin)
         % Parses input arguments and sets default values for the 
         % construction of weighting functions. Not interesting for the end 
@@ -207,11 +247,13 @@ classdef Weight
         %  Ts : sampling time @type double
         %  remainder : cell containing information that could not be casted
         %  into one of the former properties @type cell
+        %  parametric : contains the fact if the weight is going to be
+        %  parameteric or not
         
             %Set defaults
             dc_mode = 'db';
             wco_mode = 'Hz';
-            Ts = [];
+            Ts = 0;
             
             %Do stringwise checks
             checkLinear = cellfun(@(x) strcmp(x,'linear'),varargin);

@@ -34,6 +34,13 @@ classdef AbstractLPVmod
             self.parameters_ = parameters;
         end
         
+        function b = isstable(varargin)
+        % Checks the stability of the LPV model.
+        % Overloads MATLAB's \c isstable() for AbstractLPVmod objects.
+            varargin = stdargs(varargin);
+            b = isstable(varargin{:});
+        end
+        
         function b = isparametric(self)
         % Checks whether the model is parameter dependent. 
         %

@@ -44,7 +44,8 @@ classdef Solver_mixedHinfsyn < Solver
         %
         % Return values:
         %  self: the solver interface @type Solver_mixedHinfsyn
-        
+            disp('solving with mixedHinfsyn');
+
             % Set default options
             self.options.gamma.solver = 'lmilab';
             self.options.gamma.solution = 2;

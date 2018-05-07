@@ -32,26 +32,33 @@ classdef(Abstract) Specification
         % Return values:
         %  c : cell containing all specifications @type cell
         
-            isspec = cellfun(@(x) isa(x,'Specification'), varargin);
-            iscell = cellfun(@(x) isa(x,'cell'), varargin);
-            iscellofspecs = cellfun(@(x) isa(x,'cell') && all(cellfun(@(y) isa(y,'Specification'), x)), varargin);
-            rem = ~(isspec | iscell);
-            cellclasses = cellfun(@(x) cellfun(@class, x, 'un', 0), varargin((iscell & ~iscellofspecs)), 'un', 0);
-            remclass = [cellfun(@class, varargin(rem), 'un', 0) cellclasses{:}];
+            c = {};
+            remclass = {};
             
-            if ~isempty(remclass) 
-                error(['Cannot concatenate specifications or cells of specifications with these types: ' strjoin(remclass)]);
+            for k = 1:length(varargin)
+                if isa(varargin{k},'Specification')
+                    % stack
+                    c = vertcat(c,varargin(k));
+                elseif isa(varargin{k},'cell')
+                    if all(cellfun(@(x) isa(x,'Specification'),varargin{k}))
+                        % unpack and stack
+                        unpacked = vertcat(varargin{k}{:});
+                        c = [c ; unpacked];
+                    else
+                        remclass = [remclass ; 'cell'];
+                    end
+                elseif isempty(varargin{k})
+                    % do nothing
+                    c = c;
+                else
+                    % throw an error afterwards
+                    remclass = [remclass ; class(varargin{k})];
+                end
             end
             
-            specs = varargin(isspec);
-            if ~isempty(varargin(iscellofspecs))
-                unpacked_specs = vertcat(varargin{iscellofspecs});
-            else
-                unpacked_specs = cell(1,0);
+            if ~isempty(remclass)
+                error(['Cannot concatenate specifications or cells of specifications with these types: ' strjoin(unique(remclass))]);
             end
-            
-            c = [specs(:) ; unpacked_specs(:)];
-            
         end
         
         function c = horzcat(varargin)

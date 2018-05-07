@@ -204,7 +204,7 @@ classdef AbstractLFTmod
             Nu_ = transpose(self.Nl);
             Nl_ = transpose(self.Nu);
             E_ = transpose(self.E);
-            self = LFTmod(M_,Nu_,Nl_,E_,self.Ts,self.out,self.in);
+            self = LFTmod(M_,Nu_,Nl_,E_,self.Ts);
         end
         
 %% Connections

@@ -72,6 +72,9 @@ for i = 1:ndata
     end
 end
 
+% compatibility issue
+if strcmp(method,'Robust_NL_Anal'), method = 'Robust_NL'; end
+
 switch method
     case 'time2frf'
         [~,f] = data{1}{1}.spectrum(labels.input,'periodic');
@@ -227,7 +230,7 @@ switch method
         model.CYU_ = CYU;
         
         diag = []; allFRFmods = [];
-        
+                
     case 'RobustLocalPolyAnal'
         
         % keep the same number of periods for every measurement

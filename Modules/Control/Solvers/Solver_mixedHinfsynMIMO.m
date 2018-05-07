@@ -76,6 +76,9 @@ classdef Solver_mixedHinfsynMIMO < Solver
         %  self: Solver object (hopefully) containing a solution to the
         %  control problem @type Solver_mixedHinfsynMIMO
         
+            % Rescale constraints
+            %specs = rescale(specs,'constr+bound');
+            
             % Get output filters
             [P,Wo,Wi,ch] = Solver_mixedHinfsynMIMO.plant(config,specs,vars);
     
@@ -96,12 +99,12 @@ classdef Solver_mixedHinfsynMIMO < Solver
             [K, gamma, ~] = mixedHinfsynMIMO(stdP,Wi,Wo,nmeas,ncont,alpha,beta,ch,self.options);
             self.info.time = toc;
             self.K = fromstd(K);
-            self.gamma = transpose(gamma(:,1)); 
+            self.gamma = gamma(:,1); 
             self.mu = zeros(size(gamma)); 
             self.solved = true;
             
             % rescale performance
-            specs = specs.rescale('constr+bound');
+            specs = rescale(specs,'constr+bound');
             self.performance = specs.performance;
             if specs.nobj > 0
                 obj = 1:specs.nobj;

@@ -111,7 +111,7 @@ classdef AbstractLPVmod
         %  grid : grid with the values of the parameters @type double
         %  args : names of the scheduling parameters, in the same order as \c grid @type char
             
-            if nargin == 1, varargin{1} = 5; end %std density
+            if nargin == 1, varargin{1} = 2; end %std density
             
             % arguments %
             if nargin < 3
@@ -153,7 +153,7 @@ classdef AbstractLPVmod
             assert(length(density) == nparameters(self),'parameter_grid expects the grid density to have as many entries as parameter');
             grid = cell(1,self.nparameters());
             for k = 1:self.nparameters()
-                grid{1,k} = linspace(self.parameters{k}.basis.domain.min,self.parameters{k}.basis.domain.max,density(k));
+                grid{1,k} = linspace(self.parameters{k}.basis.domain.min+sqrt(eps),self.parameters{k}.basis.domain.max-sqrt(eps),density(k));
             end
         end
         

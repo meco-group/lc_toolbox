@@ -30,7 +30,7 @@ function [K, gamma, info] = mixedHinfsynMIMO(P,Wi,Wo,my,mu,alpha,beta,ch,opts)
     %   my:     number of measurements 
     %   mu:     number of control inputs
     %   alpha:  weighting factor for the norms in the objective (if a constraint: 0)
-    %   beta:   constraint on the norm (if not a constraint: 0)
+    %   beta:   constraint on the norm (if not a constraint: 0) 
     %   ch:     defines the inputs and outputs of every performance channel with indices,
     %           e.g. ch(1).In = [1 2], ch(1).Out = [1]
     %   opts:   allows to change default solver settings
@@ -181,16 +181,30 @@ function [K, gamma, info] = mixedHinfsynMIMO(P,Wi,Wo,my,mu,alpha,beta,ch,opts)
     
     spcl = lft(P,K);
     if ~isstable(spcl)
+        warning('off','backtrace');
         warning('The reconstructed controller does not stabilize the generalized plant. Your problem is likely to be ill-conditioned and the results may thus be inaccurate.');
+        warning('on','backtrace');
     end
     
     gamma = ones(length(alpha),2);
     gamma(alpha~=0,1) = synresults.gamma';
+    gamma(beta~=0,1) = beta(beta~=0)';
     pcl = minreal(Wo*spcl*Wi,[],false);
+    t = false; s = false;
     for i = 1:length(ch)
         gamma(i,2) = hinfnorm(pcl(ch(i).Out,ch(i).In),0.005);
+        if beta(i)~=0 && gamma(i,2) > gamma(i,1)
+            t = t | true; 
+        end
+        if alpha(i)~=1 && gamma(i,2)/gamma(i,1) > 1.2
+            s = s | true;
+        end
     end
-        
+    warning('off','backtrace');
+    if t; warning('Although the synthesis problem seems feasible, the solution violates the constraints after the controller reconstruction. Your problem is likely to be ill-conditioned and the results may thus be inaccurate.'); end
+    if s; warning('The performance achieved by the reconstructed controller differs more than 20% with respect to the predicted performance. Your problem is likely to be ill-conditioned and the results may thus be inaccurate.'); end
+    warning('on','backtrace');
+    
     %% Postprocessing 
     % No additional info is currently fed to the output
     
@@ -283,7 +297,8 @@ function [synresults, extplant, aux] = synthesis(stabplant,usfilter,alpha,beta,g
     msgout('<strong>Checking for controller order reduction possibilities...</strong>\n');
     
     % detect free controller order reductions
-    [extplant, nxy, nxu, Ty, Tu] = detectFCOR(extplant);
+    %[extplant, nxy, nxu, Ty, Tu] = detectFCOR(extplant);
+    nxy = 0; nxu = 0; Ty = eye(extplant.dims.my); Tu = eye(extplant.dims.mu);
     A11X = extplant.A(1:end-nxy,1:end-nxy);
     A11Y = extplant.A(1:end-nxu,1:end-nxu);
     A12 = extplant.A(1:end-nxu,end-nxu+1:end);

@@ -42,10 +42,12 @@ specs = ControllerDesign();
 % objectives
 if ~isa(obj, 'cell') && ~isempty(obj); obj = {obj}; elseif isempty(obj); obj = {}; end
 assert(all(cellfun(@(x) isa(x,'Norm'), obj)), 'Objectives can only be of type Norm.');
+assert(size(obj,2)<=1, 'Please stack objectives only vertically.');
 specs = specs.addobjective(obj);
 % constraints
 if ~isa(constr, 'cell') && ~isempty(constr); constr = {constr}; elseif isempty(constr); constr = {}; end
 assert(all(cellfun(@(x) isa(x,'NormConstraint') || isa(x,'Order'), constr)),'Constraints can only be of type NormConstraint or Order.');
+assert(size(constr,2)<=1, 'Please stack constraints only vertically.');
 orders = cellfun(@(x)isa(x,'Order'),constr);
 assert(sum(orders)<=1,'Multiple order constraints are not allowed.');
 if any(orders), specs.order = order(constr{orders}); constr(orders) = []; end

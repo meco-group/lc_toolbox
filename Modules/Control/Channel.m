@@ -261,7 +261,10 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
                         assert(all(cellfun(@isnumeric,s(1).subs)),'only numeric index');
                         assert(all(s(1).subs{1}<=siz(1)) && all(s(1).subs{2}<=siz(2)),'Index exceeds system dimensions.');
                         
-                        varargout = {Channel(self.in(s(1).subs{2}),self.out(s(1).subs{1}))};
+                        idx1 = sprintf('%u,' , s(1).subs{1}); idx1 = idx1(1:end-1); if length(s(1).subs{1})>1; idx1 = ['[' idx1 ']']; end
+                        idx2 = sprintf('%u,' , s(1).subs{2}); idx2 = idx2(1:end-1); if length(s(1).subs{2})>1; idx2 = ['[' idx2 ']']; end
+                        name_ = [self.name '(' idx1 ',' idx2 ')'];
+                        varargout = {Channel(self.in(s(1).subs{2}),self.out(s(1).subs{1}),name_)};
                 end
                 if length(s) > 1
                     varargout = {builtin('subsref',varargout{1},s(2:end))};

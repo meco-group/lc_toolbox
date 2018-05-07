@@ -24,14 +24,12 @@ function [ out ] = importQRC( in )
         rec = in;
     end
         
-    % Cast into a TDMeasurementData-object
-    inputSignal = TimeSignal;
-    inputSignal.fmin_ = in.excitation.fmin;
-    inputSignal.fmax_ = in.excitation.fmax;
-    inputSignal.fs_ = in.excitation.fs;
-    inputSignal.signal_.Value = zeros(in.excitation.fs*in.excitation.period,1);
-    inputSignal.signal_.Time = inputSignal.fs_*((1:length(inputSignal.signal_.Value))-1); % zeros(in.excitation.fs*in.excitation.period,1);
-    inputSignal.periodicity_ = true;
+    e = in.excitation;
+    if strcmp(e.type,'multisine')
+        inputSignal = Multisine('label','multisine','fs',e.fs,'fwindow',[e.fmin,e.fmax],'ppp',e.period*e.fs);
+    else
+        inputSignal = Multisine('label','multisine','fs',e.fs,'fwindow',[e.fmin,e.fmax],'ppp',e.period*e.fs,'type','odd');
+    end
     
     date = sprintf('%i-%i-%i_%i-%i',rec.time.year,rec.time.month,rec.time.day,rec.time.hour,rec.time.minute);
     

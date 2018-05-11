@@ -20,13 +20,13 @@ function [K, gamma, info] = mixedHinfsynMIMO(P,Wi,Wo,my,mu,alpha,beta,ch,opts)
     % solving multi-objective H-infinity norm minimization problems subject
     % to multiple H-infinity norm constraints.
     %
-    % Laurens Jacobs, MECO Research Team, KU Leuven, April 2018
+    % Laurens Jacobs, MECO Research Team, KU Leuven, May 2018
     % laurens.jacobs@kuleuven.be
     % 
     % Inputs: 
     %   P:      generalized plant 
-    %   Wi:     unstable input filter (no stable modes allowed, include them in P)
-    %   Wo:     unstable output filter (no stable modes allowed, include them in P)
+    %   Wi:     unstable and/or impulsive input filter (only unstable and/or impulsive modes are allowed, include other modes in P)
+    %   Wo:     unstable and/or impulsive output filter (only unstable and/or impulsive modes are allowed, include other modes in P)
     %   my:     number of measurements 
     %   mu:     number of control inputs
     %   alpha:  weighting factor for the norms in the objective (if a constraint: 0)
@@ -75,14 +75,17 @@ function [K, gamma, info] = mixedHinfsynMIMO(P,Wi,Wo,my,mu,alpha,beta,ch,opts)
     %   - T. Iwasaki and R.E. Skelton. "All Controllers for the General
     %     H-infinity Control Problem: LMI Existence Conditions and State
     %     Space Formulas." Automatica, vol. 30, no. 8, 1994.
-    %
-    % This function is inspired by earlier implementations of Michiel 
-    % Dhadamus and Goele Pipeleers.
+    %   - Y. Feng and S. Ziyi. "H-infinity Control with Output Weights For
+    %     Descriptor Systems: An LMI Approach." Proceedings of the 33rd
+    %     Chinese Control Conference, Nanjing, China, 2014.
+    %   - I. Masubuchi. "Output feedback controller synthesis for
+    %     descriptor systems satisfying closed-loop dissipativity."
+    %     Automatica, vol. 43, no. 2, 2007.
 
     %% Preprocessing
     % Restructure the generalized plant and check and store dimensions
 
-    msgout(' ___________________________________\n| <strong>This is mixedHinfsynMIMO, v1.1.</strong>   |\n| Laurens Jacobs, April 2018        |\n|___________________________________|\n\n');
+    msgout(' ___________________________________\n| <strong>This is mixedHinfsynMIMO, v1.1.</strong>   |\n| Laurens Jacobs, May 2018        |\n|___________________________________|\n\n');
     msgout('<strong>Preprocessing...</strong>\n');
     
     % parse options
@@ -297,8 +300,7 @@ function [synresults, extplant, aux] = synthesis(stabplant,usfilter,alpha,beta,g
     msgout('<strong>Checking for controller order reduction possibilities...</strong>\n');
     
     % detect free controller order reductions
-    %[extplant, nxy, nxu, Ty, Tu] = detectFCOR(extplant);
-    nxy = 0; nxu = 0; Ty = eye(extplant.dims.my); Tu = eye(extplant.dims.mu);
+    [extplant, nxy, nxu, Ty, Tu] = detectFCOR(extplant);
     A11X = extplant.A(1:end-nxy,1:end-nxy);
     A11Y = extplant.A(1:end-nxu,1:end-nxu);
     A12 = extplant.A(1:end-nxu,end-nxu+1:end);
@@ -392,7 +394,7 @@ function [synresults, extplant, aux] = synthesis(stabplant,usfilter,alpha,beta,g
     
     % check solution
     eigvals = [eig(double(PXY)) ; -eig(double(ZX)) ; -eig(double(ZY))];
-    assert(all(eigvals >= 0), ['The SDP solver (''' gammasolver.solver ''') returned an infeasible solution for the synthesis problem.']);
+    assert(all(eigvals >= 0), ['The SDP solver (''' gammasolver.solver ''') returned an infeasible solution for the synthesis problem. The most negative eigenvalue is ' num2str(min(eigvals)) '.']);
     
     % save auxiliary variables that are also required for the controller reconstruction
     aux.Zohat = Zohat; 
@@ -697,7 +699,7 @@ function sym = He(X)
     sym = X+X'; % notice: not divided by 2!
 end
 
-function [plant, nxy, nxu, Ty, Tu] = detectFCOR(plant)
+function [plant, nxy, nxu, Ty, Tu, T] = detectFCOR(plant)
     % Calculates a state-space realization that easily allows to reduce the
     % controller order while retaining convexity (if possible), i.e.:
     %
@@ -722,60 +724,72 @@ function [plant, nxy, nxu, Ty, Tu] = detectFCOR(plant)
     nxy = rank([plant.Cy plant.Dyw])-rank(plant.Dyw);
     nxu = rank([plant.Bu ; plant.Dzu])-rank(plant.Dzu);
     if nxu > nxy; nxy = 0; else; nxu = 0; end
+    nxu = 0; nxy = 0;
     
-    % transform to canonical form
-    if nxy==0
-        % swap rows of Dzu
-        [~,swap] = sort(sum(plant.Dzu,1)==0); 
-        Tu = eye(length(swap)); Tu = Tu(swap,:); 
-        Bu = plant.Bu*Tu;
-        
-        % look for an appropriate state transformation
-        Bu(abs(Bu)<sqrt(eps)) = 0;
-        [aux, j] = rref([fliplr(Bu) eye(plant.dims.n)]);
-        Tx = fliplr(aux(:,plant.dims.mu+1:end)')';
-        piv = j(j<=plant.dims.mu);
-        T = zeros(plant.dims.mu);
-        for i=1:nxu
-             T(piv(i),i) = 1;
-             T(i,piv(i)) = 1;
+    % transform to canonical form for continuous time
+    if ~plant.isdiscrete
+        if nxy==0
+            % swap rows of Dzu
+            [~,swap] = sort(sum(plant.Dzu,1)==0); 
+            Tu = eye(length(swap)); Tu = Tu(swap,:); 
+            Bu = plant.Bu*Tu;
+
+            % look for an appropriate state transformation
+            Bu(abs(Bu)<sqrt(eps)) = 0;
+            [aux, j] = rref([fliplr(Bu) eye(plant.dims.n)]);
+            Tx = fliplr(aux(:,plant.dims.mu+1:end)')';
+            piv = j(j<=plant.dims.mu);
+            T = zeros(plant.dims.mu);
+            for i=1:nxu
+                 T(piv(i),i) = 1;
+                 T(i,piv(i)) = 1;
+            end
+            notsw = setdiff(1:plant.dims.mu,piv(1:nxu));
+            T(sub2ind([plant.dims.mu plant.dims.mu],notsw,notsw)) = 1;
+            T = blkdiag(T,eye(plant.dims.mu-length(T)));
+            Tu = Tu*T;
+            Ty = eye(plant.dims.my);
+        else
+            % swap columns of Dyw
+            [~,swap] = sort(sum(plant.Dyw,2)==0);
+            Ty = eye(length(swap)); Ty = Ty(swap,:);
+            Cy = Ty*plant.Cy;
+
+            % look for an approriate state transformation
+            Cy(abs(Cy)<sqrt(eps)) = 0;
+            [aux, j] = rref([fliplr(Cy') eye(plant.dims.n)]);
+            Tx = inv(fliplr(aux(:,plant.dims.my+1:end)'));
+            piv = j(j<=plant.dims.my);
+            T = eye(plant.dims.my);
+            for i=1:nxy
+                 T(piv(i),i) = 1;
+                 T(i,piv(i)) = 1;
+            end
+            notsw = setdiff(1:plant.dims.my,piv(1:nxy));
+            T(sub2ind([plant.dims.my plant.dims.my],notsw,notsw)) = 1;
+            T = blkdiag(T,eye(plant.dims.my-length(T)));
+            Ty = T*Ty;
+            Tu = eye(size(plant.dims.mu));
         end
-        notsw = setdiff(1:plant.dims.mu,piv(1:nxu));
-        T(sub2ind([plant.dims.mu plant.dims.mu],notsw,notsw)) = 1;
-        T = blkdiag(T,eye(plant.dims.mu-length(T)));
-        Tu = Tu*T;
-        Ty = eye(plant.dims.my);
-    else
-        % swap columns of Dyw
-        [~,swap] = sort(sum(plant.Dyw,2)==0);
-        Ty = eye(length(swap)); Ty = Ty(swap,:);
-        Cy = Ty*plant.Cy;
         
-        % look for an approriate state transformation
-        Cy(abs(Cy)<sqrt(eps)) = 0;
-        [aux, j] = rref([fliplr(Cy') eye(plant.dims.n)]);
-        Tx = inv(fliplr(aux(:,plant.dims.my+1:end)'));
-        piv = j(j<=plant.dims.my);
-        T = eye(plant.dims.my);
-        for i=1:nxy
-             T(piv(i),i) = 1;
-             T(i,piv(i)) = 1;
-        end
-        notsw = setdiff(1:plant.dims.my,piv(1:nxy));
-        T(sub2ind([plant.dims.my plant.dims.my],notsw,notsw)) = 1;
-        T = blkdiag(T,eye(plant.dims.my-length(T)));
-        Ty = T*Ty;
-        Tu = eye(size(plant.dims.mu));
+        % obtain new full state-space matrices
+        plant.A = Tx*plant.A/Tx;
+        plant.Bu = Tx*plant.Bu*Tu;
+        plant.Bw = Tx*plant.Bw;
+        plant.Cy = Ty*plant.Cy/Tx;
+        plant.Dyw = Ty*plant.Dyw;
+        plant.Cz = plant.Cz/Tx;
+        plant.Dzu = plant.Dzu*Tu; 
     end
     
-    % return the new generalized plant as well
-    plant.A = Tx*plant.A/Tx;
-    plant.Bu = Tx*plant.Bu*Tu;
-    plant.Bw = Tx*plant.Bw;
-    plant.Cy = Ty*plant.Cy/Tx;
-    plant.Dyw = Ty*plant.Dyw;
-    plant.Cz = plant.Cz/Tx;
-    plant.Dzu = plant.Dzu*Tu; 
+    % rebalance
+    [~,~,T] = balreal(ss(plant.A,plant.Bw,plant.Cz,plant.Dzw));
+    T = blkdiag(T(1:end-nxu-nxy,1:end-nxu-nxy),T(end-nxu-nxy+1:end,end-nxu-nxy+1:end));
+    plant.A = T*plant.A/T;
+    plant.Bu = T*plant.Bu;
+    plant.Bw = T*plant.Bw;
+    plant.Cy = plant.Cy/T;
+    plant.Cz = plant.Cz/T;
     
 end
 

@@ -317,5 +317,23 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         
     end
     
+     methods(Static)
+         function a = toarray(c)
+            % Returns an array version of a cell of Channel objects.
+            % 
+            % Parameters:
+            %  c : cell of Channel objects @type cell
+            %
+            % Return values:
+            %  a : equivalent array @type Channel
+
+            assert(any(size(c)<=1),'unique for Channel objects only works on a 1xN or Nx1 cell.');
+            a = c{1};
+            for i=2:length(c)
+                a = cat(2,a,c{i});
+            end
+         end
+     end
+    
 end
 

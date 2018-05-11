@@ -71,7 +71,7 @@ classdef Solver
             % check all channels that are in the objects
             allchannels = cellfun(@(x) cellfun(@(y) y.ch_p, x.performance, 'un', 0), allinp, 'un', 0);
             allchannels = vertcat(allchannels{:})'; 
-            allchannels = num2cell(unique(cellfun(@(x) x, allchannels)));
+            allchannels = num2cell(unique(Channel.toarray(allchannels)));
             nofch = length(allchannels);
             
             % loop through all channels create a plot of it
@@ -183,7 +183,7 @@ classdef Solver
             % check all channels that are in the objects
             allchs = cellfun(@(x) cellfun(@(y) y.ch_p, x.performance, 'un', 0), sols, 'un', 0);
             allchs = vertcat(allchs{:})'; 
-            allchs = unique(cellfun(@(x) x, allchs));
+            allchs = unique(Channel.toarray(allchannels));
             chs = cellfun(@(x) x, chs);
             if isempty(chs)
                 chs = num2cell(allchs);
@@ -284,7 +284,7 @@ classdef Solver
             % check all channels that are in the objects
             allchs = cellfun(@(x) cellfun(@(y) y.ch_p, x.performance, 'un', 0), sols, 'un', 0);
             allchs = vertcat(allchs{:})'; 
-            allchs = unique(cellfun(@(x) x, allchs));
+            allchs = unique(Channel.toarray(allchannels));
             chs = [chs{:}]';
             if isempty(chs)
                 chs = num2cell(allchs);

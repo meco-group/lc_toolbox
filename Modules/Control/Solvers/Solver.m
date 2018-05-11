@@ -183,7 +183,7 @@ classdef Solver
             % check all channels that are in the objects
             allchs = cellfun(@(x) cellfun(@(y) y.ch_p, x.performance, 'un', 0), sols, 'un', 0);
             allchs = vertcat(allchs{:})'; 
-            allchs = unique(Channel.toarray(allchannels));
+            allchs = unique(Channel.toarray(allchs));
             chs = cellfun(@(x) x, chs);
             if isempty(chs)
                 chs = num2cell(allchs);
@@ -284,7 +284,7 @@ classdef Solver
             % check all channels that are in the objects
             allchs = cellfun(@(x) cellfun(@(y) y.ch_p, x.performance, 'un', 0), sols, 'un', 0);
             allchs = vertcat(allchs{:})'; 
-            allchs = unique(Channel.toarray(allchannels));
+            allchs = unique(Channel.toarray(allchs));
             chs = [chs{:}]';
             if isempty(chs)
                 chs = num2cell(allchs);

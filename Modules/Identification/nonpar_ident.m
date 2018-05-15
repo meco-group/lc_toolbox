@@ -224,7 +224,7 @@ switch method
         [G, Y, U, CYU] = Robust_NL_Anal(Yall, Uall, Rall);
         
         % parse output into the right toolbox structure
-        model = IdentFRDmod(G.mean, f, 'FrequencyUnit', 'Hz'); % the VUB toolbox runs in Hz
+        model = IdentFRDmod(G.mean, f, data{1}{1}.Ts, 'FrequencyUnit', 'Hz'); % the VUB toolbox runs in Hz
         model.Y_ = Y;
         model.U_ = U;
         model.CYU_ = CYU;

@@ -111,7 +111,7 @@ classdef AbstractLPVmod
         %  grid : grid with the values of the parameters @type double
         %  args : names of the scheduling parameters, in the same order as \c grid @type char
             
-            if nargin == 1, varargin{1} = 2; end %std density
+            if nargin == 1, varargin{1} = 5; end %std density
             
             % arguments %
             if nargin < 3

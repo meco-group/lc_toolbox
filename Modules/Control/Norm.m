@@ -264,7 +264,14 @@ classdef Norm < Specification
         %
         % Return values:
         %  n : the stacked norm @type Norm
-            self = stack(varargin{:});
+            if all(cellfun(@(x) isa(x,'Norm'),varargin))
+                self = varargin{1};
+                for k = 2:nargin
+                    self = stack(self,varargin{k});
+                end
+            else
+                error('blkdiag for norms is only applicable if all input arguments are of type Norm.');
+            end
         end
         
         function self = stackvert(self,other)

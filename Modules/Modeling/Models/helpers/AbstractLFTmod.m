@@ -208,62 +208,6 @@ classdef AbstractLFTmod
         end
         
 %% Connections
-
-        
-%         function self = c2d(self,Ts,varargin)
-%             assert(nargin>1, 'c2d requires at least two input arguments.');
-%             assert(self.Ts ~= 0, 'Your system is already discrete!');
-%             if nargin==2
-%                 assert(isnumeric(Ts) && isscalar(Ts) && Ts>0, 'The sampling time should be a positive number.');
-%                 method = 'tustin';
-%             else
-%                 method = varargin{1};
-%                 assert(any(strcmp(varargin{1},{'fweuler','tustin'})),'Only ''fweuler'' and ''tustin'' are supported for the time being.');
-%             end
-%             
-%             switch method
-%                 case 'tustin'   
-%                     % See Doyle, Packard and Zhou (1991): 'Review of LFTs, LMIs and ?',
-%                     % 30th Conference on Decision and Control (CDC), Brighton, England.
-% 
-%                     % discretizator
-%                     I = eye(self.nx);
-%                     M_ = SSmod([I sqrt(2)*I ; Ts/sqrt(2)*I Ts/2*I],Ts);
-%                     Nl_ = SSmod(zeros(self.nx,self.nx), self.E, eye(self.nx,self.nx), zeros(self.nx,self.nx), Ts);
-%                     discretizator = lft(Nl_,M_);
-%                     
-%                     % remove the continuous time dynamics
-%                     self.E = zeros(0,0);
-%                     self.Ts = Ts;
-%                     self.M(3,:) = cellfun(@vertcat, self.M(2,:), self.M(3,:), 'un', 0);
-%                     self.M(2,:) = cellfun(@(x) zeros(0,size(x,2)), self.M(2,:), 'un', 0);
-%                     self.M(:,3) = cellfun(@horzcat, self.M(:,2), self.M(:,3), 'un', 0);
-%                     self.M(:,2) = cellfun(@(x) zeros(size(x,1),0), self.M(:,2), 'un', 0);
-%                     x0_old = self.x0;
-%                     self.x0 = zeros(0,1);
-%                     
-%                     % add the discrete time dynamics
-%                     self = lft(discretizator,self);
-%                     
-%                     % transform the initial state to discrete time
-%                     % TO DO - difficulty: depends on u(0) and p(0), cf. ODEmod
-%                     self = self.setx0(zeros(self.nx,1)); 
-%                     if any(x0_old); warning('Initial states are lost, not yet implemented!'); end
-%                     
-%                 case 'fweuler'
-%                    
-%                     % discretize
-%                     self.Ts = Ts;
-%                     self.M(2,:) = cellfun(@(x) x*Ts, self.M(2,:), 'un', 0);
-%                     self.M{2,2} = self.M{2,2}+eye(size(self.nx));
-%                     
-%                     % initial states remain the same
-%                     
-%                 % case 'bweuler'
-%                 % TO DO - similar to Tustin 
-%                 
-%             end
-%         end
         
         function self = lft(self,other,nu,ny)
         % Calculates the star interconnection of two AbstractLFTmod objects.
@@ -462,7 +406,7 @@ classdef AbstractLFTmod
         function check(self)
         % Checks whether all dimensions of the linear fractional transform
         % matrices are consistent. 
-            assert(all(subsize(self)>0),'One or more dimensions of the system is <0');
+            assert(all(subsize(self)>=0),'One or more dimensions of the system is <0');
 
             % check dimensions of M
             S = cell2mat(cellfun(@size,self.M(:),'un',0));

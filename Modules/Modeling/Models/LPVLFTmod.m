@@ -85,5 +85,58 @@ classdef(InferiorClasses = {?zpk,?tf,?ss,?frd}) LPVLFTmod < AbstractLFTmod & Abs
                 product = mtimes@Model(self,other);
             end
         end
+        
+        function dmod = c2d(self, Ts, method)
+            
+            % parse input
+            switch nargin
+                case 1
+                    error('Not enough input arguments.');
+                case 2
+                    method = 'tustin';
+                case 3
+                    assert(any(strcmp(method,{'tustin','fweuler','bweuler'})), 'Unknown discretization method. Supported methods are: ''fweuler'', ''bweuler'' and ''tustin''.');
+                otherwise
+                    warning('c2d for LPV systems has the following syntax: c2d(mod,Ts) or c2d(mod,Ts,method). I''m ignoring your additional input arguments.');
+            end
+            assert(isscalar(Ts) && isreal(Ts) && isnumeric(Ts) && Ts>=0, 'Sampling time should be a positive real number.');
+            if Ts==0; dmod = self; return; end
+            
+            if any(self.x0); warning('Initial states are lost while discretizing a parameter-dependent system.'); end
+            
+            % discretize the state-space matrices
+            switch method
+                case 'fweuler'
+                    self.M(2,:) = cellfun(@(x) x*Ts, self.M(2,:), 'un', 0);
+                    self.M{2,2} = self.M{2,2}+self.E;
+                    fb = [];
+
+                case 'bweuler'
+                    self.M(2,:) = cellfun(@(x) x*Ts, self.M(2,:), 'un', 0);
+                    ATs = self.M{2,2};
+                    self.M{2,2} = self.E;
+                    self.E = self.E-ATs;
+                    fb = [];
+
+                case 'tustin'
+                % See Doyle, Packard and Zhou (1991): 'Review of LFTs, LMIs and mu', 
+                % 30th Conference on Decision and Control (CDC), Brighton, England.
+                    assert(rank(self.E)==length(self.E),'tustin''s method is currently only implemented for proper systems.'); 
+                    I = eye(self.nx);
+                    M_ = SSmod([I sqrt(2)*I ; sqrt(2)*I I], Ts);
+                    Nl_ = SSmod(zeros(self.nx,self.nx), I, I, zeros(self.nx,self.nx), Ts);
+                    fb = lft(Nl_,M_)*self.E*(Ts/2);
+                    self.E = zeros(0,0); x0_old = self.x0; self.x0 = zeros(0,1); % to avoid problems in lft
+                    self.M(3,:) = cellfun(@vertcat, self.M(2,:), self.M(3,:), 'un', 0);
+                    self.M(2,:) = cellfun(@(x) zeros(0,size(x,2)), self.M(2,:), 'un', 0);
+                    self.M(:,3) = cellfun(@horzcat, self.M(:,2), self.M(:,3), 'un', 0);
+                    self.M(:,2) = cellfun(@(x) zeros(size(x,1),0), self.M(:,2), 'un', 0);
+            end
+            
+            % return the discretized model
+            self.Ts = Ts;
+            dmod = lft(fb,self);
+            
+        end
     end
 end

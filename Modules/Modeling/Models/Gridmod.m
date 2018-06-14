@@ -52,7 +52,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
                 if isa(grid,'Model') && ~isa(grid,'Gridmod')
                     dims = cellfun(@length,params(:,2));
                     if length(dims) == 1, dims = [dims,1]; end
-                    grid = repmat({grid},dims);
+                    grid = repmat({grid},dims(:)');
                 end
                 % </MAARTEN>
 
@@ -168,7 +168,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
         % Overloading MATLAB's \c blkdiag() for LCToolbox models. 
         %
         % Either \c self or \c other is supposed to be a Gridmod object.
-        % Two Gridmod objects cannot be combined. 
+        % Multiple Gridmod objects cannot be combined, unless their parameters and grids are equal. 
         % 
         % Parameters:
         %  varargin: list of Model objects, one of them being a Gridmod
@@ -177,20 +177,49 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
         % Return values:
         %  self: the new grid of models @type Gridmod
             isgridmod = cellfun(@(x) isa(x,'Gridmod'),varargin);
-            if all(isgridmod)
-                for k = 2:length(varargin)
-                    assert(all(cellfun(@(x,y)all(eq(x,y)),varargin{1}.params_(:),varargin{k}.params_(:))));
+            gridmods = varargin(isgridmod);
+            othermods = varargin(~isgridmod);
+            if sum(isgridmod)>1
+                % combine the gridmods
+                for k = 2:length(gridmods)
+                    assert(~any(size(gridmods{1}.params_(:))-size(gridmods{2}.params_(:))), 'Multiple Gridmod objects can only be combined if their parameter grids are equal.');
+                    assert(all(cellfun(@(x,y)all(eq(x,y)),gridmods{1}.params_(:),gridmods{k}.params_(:))),'Multiple Gridmod objects can only be combined if their parameter grids are equal.');
                 end
-                grids = cellfun(@(x)x.grid_,varargin(:),'un',0);
+                grids = cellfun(@(x)x.grid_,gridmods(:),'un',0);
                 grid = cellfun(@blkdiag,grids{:},'un',0);
-                self = Gridmod(grid,varargin{1}.params_);
+                combinedgridmods = Gridmod(grid,varargin{1}.params_);
+                
+                % combine the new gridmod with the other models 
+                % ! change inputs and outputs to retain original order !
+                if isempty(othermods)
+                    self = combinedgridmods;
+                else
+                    self = blkdiag(combinedgridmods,othermods{:});
+                    i = 0; no = sum(cellfun(@nout, gridmods)); ni = sum(cellfun(@nin, gridmods));
+                    idxoutold{1} = 1:nout(varargin{1});
+                    idxinold{1} = 1:nin(varargin{1});
+                    for k=2:nargin
+                        idxoutold{k} = max(idxoutold{k-1})+(1:nout(varargin{k}));
+                        idxinold{k} = max(idxinold{k-1})+(1:nin(varargin{k}));
+                    end
+                    idxout = []; idxin = [];
+                    for k=1:nargin
+                        if ~isgridmod(k)
+                            idxout = [idxout (idxoutold{k}+no-sum(cellfun(@nout, gridmods(1:i))))];
+                            idxin = [idxin (idxinold{k}+ni-sum(cellfun(@nin, gridmods(1:i))))];
+                        else
+                            i = i+1;
+                            idxout = [idxout (1:nout(gridmods{i}))+sum(cellfun(@nout, gridmods(1:i-1)))];
+                            idxin = [idxin (1:nin(gridmods{i}))+sum(cellfun(@nin, gridmods(1:i-1)))];
+                        end
+                    end
+                    self = submodel(self,idxout,idxin);
+                end
             else
-                % Check which argument is the gridmod
+                % check which argument is the gridmod and combine
                 idx = find(isgridmod);
                 varargin(~isgridmod) = cellfun(@(x)Gridmod(x,varargin{idx(1)}.params_),varargin(~isgridmod),'un',0);
                 self = blkdiag(varargin{:});
-%                 gridmod = varargin{idx};
-%                 grid = gridfun(gridmod,@(x)blkdiag(varargin{1:(idx-1)},x,varargin{(idx+1):end}));
             end
         end
         

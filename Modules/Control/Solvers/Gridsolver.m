@@ -76,7 +76,13 @@ classdef Gridsolver < Solver
             self.solved = cell(gmod.gridsize());
             self.info = cell(gmod.gridsize());
             
+            thp = cell(size(gmod.params_,1),1);
+            siz = cellfun(@length, gmod.params_(:,2)); siz = siz(:)';
             for k = 1:prod(gmod.gridsize())
+                [thp{:}] = ind2sub(siz,k); 
+                str = cellfun(@(x,y,z) ['     ' z ': ' num2str(x(y))], gmod.params_(:,2), thp, gmod.params_(:,1),'un',0);
+                disp('Solving for these grid parameters:'); 
+                disp(char(str));
                 g.empty();
                 g.add(gmod.grid_{k});
                 [self.K{k},self.H{k},self.gamma{k},self.mu{k},self.performance{k},self.solved{k},self.info{k}] ...

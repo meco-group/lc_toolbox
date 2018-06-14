@@ -67,6 +67,22 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
                 n = setnorm(n,varargin{1});
             end
         end
+        
+        function s = getin(self)
+        % Returns the input of the channel. 
+        %
+        % Return values:
+        %  s : input signal @type Signal 
+            s = self.in;
+        end
+        
+        function s = getout(self)
+        % Returns the output of the channel. 
+        %
+        % Return values:
+        %  s : output signal @type Signal 
+            s = self.out;
+        end
                 
         function s = csize(self)
         % Returns the size of the channel. 

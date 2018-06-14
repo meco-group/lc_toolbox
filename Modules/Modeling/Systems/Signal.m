@@ -388,13 +388,16 @@ classdef(InferiorClasses = {?zpk,?ss,?tf}) Signal
         % Return values:
         %  b : boolean reflecting whether or not the signals are aliases
         %  @type logical
-            assertsize(s1,s2);
-            if length(s1) == 1
-                z1 = [s1,s1.alias];
-                z2 = [s2,s2.alias];
-                b = any(arrayfun(@(y)any(arrayfun(@(x)isequal(x,y),z1)),z2));
+            if length(s1) == length(s2)
+                if length(s1) == 1
+                    z1 = [s1,s1.alias];
+                    z2 = [s2,s2.alias];
+                    b = any(arrayfun(@(y)any(arrayfun(@(x)isequal(x,y),z1)),z2));
+                else
+                    b = all(arrayfun(@(x,y)isalias(x,y),s1,s2));                
+                end
             else
-                b = all(arrayfun(@(x,y)isalias(x,y),s1,s2));                
+                b = false;
             end
         end
         
@@ -431,20 +434,22 @@ classdef(InferiorClasses = {?zpk,?ss,?tf}) Signal
             LIA = logical(LIA);
         end
         
-        function [C,IA,IC] = unique(A)
+        function [C,IA,IC] = unique(A,varargin)
         % Removes duplicates (not including aliases!) that are present in
         % subsignals.
         % Overloads MATLAB's \c unique() for Signal objects.
         %
         % Parameters:
         %  A : the signal @type Signal
+        %  varargin: sorting settings (\c unique)
         %
         % Return values:
         %  C : signal containing the same subsignals as the input but
         %  sorted and without repetitions
         %  IA : indices such that @code C = A(IA) @endcode @type double
         %  IC : indices such that @code A = C(IC) @endcode @type double
-            [c,IA,IC] = unique([A.UUID]);
+%             keyboard
+            [~,IA,IC] = unique([A.UUID],varargin{:});
             C = A(IA);
         end
         

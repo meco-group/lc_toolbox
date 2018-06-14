@@ -81,8 +81,7 @@ classdef Solver_mixedFixedOrder < Solver
         
             % Compute plant state-space
             % specs = specs.rescale('none');
-            [P,wspecs] = Solver.plant(config,specs,vars);
-            ch = Solver.channels(wspecs);
+            [P,~,~,ch] = Solver.plant(config,specs,vars);
             
             P = balreal(std(P)); 
             if isdt(P)

@@ -80,7 +80,7 @@ classdef Solver_SynLPV < Solver
             % Compute plant state-space
             specs = rescale(specs,'all');
             P = Solver.plant(config,specs,vars);
-            P = simplify(P.content(1));
+            P = simplify(P);
             
             % solver input
             ncont = length(specs.ctrl_in);

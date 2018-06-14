@@ -196,7 +196,7 @@ function [A,B,C,D,E] = evalSysMat(model,p,t)
     if isa(model,'AbstractDSSmod')
         [A,B,C,D,E] = getdssdata(model.evalme(cellfun(@feval,p(:,2),num2cell(repmat(t,length(p(:,2)),1))),model.parameters()'));
     else % isa(model,'AbstractLFTmod')
-        [A,B,C,D,E] = getdssdata(model.evalme(cellfun(@feval,p(:,2),num2cell(repmat(t,length(p(:,2)),1))),model.parameters()'));
+        [A,B,C,D,E] = dssdata(std(model.evalme(cellfun(@feval,p(:,2),num2cell(repmat(t,length(p(:,2)),1))),model.parameters()')));
     end
 end
 

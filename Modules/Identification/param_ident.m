@@ -100,6 +100,13 @@ if isa(data,'idfrd') || isa(data,'frd') || isa(data,'FRDmod')
             data.Y_.mean = data.ResponseData;
             data.U_.mean = ones(nin(data),F);
             
+            if ~isempty(settings.FRFW)
+                assert(all(size(settings.FRFW) == [F,1]),'MIMO_NLS expects a weight for each frequency line only');
+                for k = 1:F
+                    data.CYU_.n(:,:,k) = data.CYU_.n(:,:,k)/settings.FRFW(k);
+                end
+            end
+            
             model = param_ident('data',data,'method','MIMO_ML','settings',settings);
             
         otherwise

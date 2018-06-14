@@ -89,6 +89,12 @@ classdef AbstractSystem < handle
             [self,restore] = subsystem_helper(self,keep);
         end
         
+        function self = replace(self,index,model)
+            if ~iscell(model), model = {model}; end
+            assert(all(cellfun(@(x) isa(x,'Model'),model)),'Can only add Model to a system');
+            self.content_(index) = model;
+        end
+        
         function n = numod(self)
             n = length(self.content_);
         end
@@ -243,6 +249,13 @@ classdef AbstractSystem < handle
                     error('InputOutput cluster discovered. Inform the developers.');
                 end
             end
+        end
+        
+        function [sys] = mtimes(s1,s2)
+            assert(isa(s1,'AbstractSystem') && isa(s2,'AbstractSystem'), 's1 and s2 should be systems (not models)');
+            assert(size(s2,1) == size(s1,2),'number of inputs does not match');
+            conn = [s1.in == s2.out];
+            sys = IOSystem(s1,s2,conn);
         end
     end
     

@@ -200,7 +200,7 @@ classdef AbstractLFTmod
         %
         % Return values: 
         %  self : transpose of the model @type AbstractLFTmod
-            M_ = transpose(reshape(cellfun(transpose,self.M(:),'un',0),[4,4]));
+            M_ = transpose(reshape(cellfun(@transpose,self.M(:),'un',0),[4,4]));
             Nu_ = transpose(self.Nl);
             Nl_ = transpose(self.Nu);
             E_ = transpose(self.E);

@@ -402,10 +402,11 @@ classdef Solver
                 cap = cellfun(@(x)setfield(eval(['Solver_' x '.capabilities()']),'name',x),Solver.solverlist);
 
                 % Check the solver selection criteria
+                [~,Woutus,Winus,ch] = Solver.plant(config,specs,vars);
                 criteria.constraints = isCO(specs);
-                criteria.inout = isSISO(specs);
+                criteria.inout = ~isequal(ch.In{1},ch.In{:}) + ~isequal(ch.Out{1},ch.Out{:});
                 criteria.norm = norms(specs);
-                criteria.unstable = ~isstable(specs);
+                criteria.unstable = ~(isempty(Woutus.a) && isempty(Winus.a));
                 criteria.improper = false;
                 criteria.parametric = isparametric(specs) | any(cellfun(@(x)isparametric(content(x,1)),cconf));
 
@@ -440,7 +441,7 @@ classdef Solver
             end
         end
         
-        function [GP,wspecs] = plant(config,specs,vars,minimal)
+        function [GP,Woutus,Winus,ch] = plant(config,specs,vars)
             % Constructs the generalized plant based on the control 
             % configuration the user specified and on the specifications.
             % 
@@ -453,63 +454,70 @@ classdef Solver
             % Return values: 
             %  GP : returns the generalized plant including all exogenous inputs and regulated outputs. @type SystemOfModels
             %  wspecs : adapted specifications, such that the input signal of every channel becomes the input signal of the corresponding input weight and the output signal of every signal becomes the output of its corresponding output weight @type ControllerDesign
-            
-            if nargin < 4
-                minimal = true;
-            end
-            
+                        
             % 1. Make the openloop -> remove the variables
             [~,r] = cellfun(@empty,vars,'un',0);
 
             % 2. Make systems of the weights
-            weights = {};
-            connections = {};
-            exog_in_ = [];
-            exog_out_ = [];
-            wspecs = specs;
+            norms = specs.performance;
+            cellfun(@disp,norms);
 
-            % set up weights for augmented plant
-            for k = 1:length(specs.performance)
-                chan = specs.performance{k}.ch_p;
-                
-                % add system to generalized plant problem
-                if specs.performance{k}.isoutput()
-                    sysout = IOSystem(specs.performance{k}.W_out);
-                    weights = [weights,{sysout}];
-                    connections = [connections;sysout.in == chan.out];
-                    chan.out = sysout.out;
-                    wspecs.performance{k} = setout(wspecs.performance{k},sysout.out);
-                elseif specs.performance{k}.isinput()
-                    sysin = IOSystem(specs.performance{k}.W_in);
-                    weights = [weights,{sysin}];
-                    connections = [connections;sysin.out == chan.in];
-                    chan.in = sysin.in;
-                    wspecs.performance{k} = setin(wspecs.performance{k},sysin.in);
-                end
-                exog_in_ = [exog_in_;chan.in];
-                exog_out_ = [exog_out_;chan.out];
-            end
-
+            % check which weighted inputs are equal
+            [Win,connections_in,norms] = Norm.tofilter(norms,'in');
+            [Wout,connections_out,norms] = Norm.tofilter(norms,'out');
+            
+            % make channel structures
+            cellfun(@disp,norms);
+            ch = Solver.channels(norms,Wout,Win);
+            
             % 3. Throw it all together
-            GP = IOSystem(config,weights{:},connections);
-            GP = GP.model();
-            if ~isparametric(GP.content(1))
-                c = ssminreal(simplify(GP.content(1)));
-                GP.empty();
-                GP.add(c);
+            GP = config([vertcat(connections_out{:,2});specs.ctrl_out],[vertcat(connections_in{:,2});specs.ctrl_in]);
+            GP = GP.content(1);
+            
+            % put filter splitting and multiplication here
+            try
+                [Wins,Winus] = stabsep(std(Win.content(1)));
+                if ~isempty(Winus.a) % unstable modes in input filter
+                    Winus = [Winus;ss(eye(size(Win,2)))];
+                    Wins = [ss(eye(size(Win,1))),Wins];
+                else
+                    Wins = std(Win.content(1));
+                    Winus = ss(eye(size(Wins,2)));
+                end
+            catch
+                warning('stabsep cannot separate modes for improper systems. The stable/unstable decomposition is omitted for now.');
+                Wins = std(Win.content(1));
+                Winus = ss(eye(size(Wins,2)));
+            end
+              
+            try
+                [Wouts,Woutus] = stabsep(std(Wout.content(1)));
+                if ~isempty(Woutus.a) % unstable modes in output filter
+                    Wouts = [ss(eye(size(Wout,2)));Wouts];
+                    Woutus = [Woutus,ss(eye(size(Wout,1)))];
+                else
+                    Wouts = std(Wout.content(1));
+                    Woutus = ss(eye(size(Wouts,1)));
+                end
+            catch
+                warning('stabsep cannot separate modes for improper systems. The stable/unstable decomposition is omitted for now.');
+                Wouts = std(Wout.content(1));
+                Woutus = ss(eye(size(Wouts,1)));
             end
             
-            if minimal
-                exog_in_ = unique(exog_in_);
-                exog_out_ = unique(exog_out_);
+            % multiply the stable parts
+            Wouts_ = blkdiag(Wouts,ss(eye(length(specs.ctrl_out))));
+            Wins_ = blkdiag(Wins,ss(eye(length(specs.ctrl_in))));
+            GP = fromstd(Wouts_)*GP*fromstd(Wins_);
+            if ~isparametric(GP)
+                GP = ssminreal(simplify(GP));
             end
-            GP = GP([exog_out_;specs.ctrl_out],[exog_in_;specs.ctrl_in]);
             
             % 4. Set removed content back
             restore(vertcat(r{:}));
         end
         
-        function ch = channels(wspecs)
+        function ch = channels(norms,Wout,Win)
             % Returns a structure defining the performance channels.
             %
             % Parameters: 
@@ -519,10 +527,9 @@ classdef Solver
             %  ch : structure defining the performance channels channels @type struct
             
             ch.H2 = []; ch.Hinf = []; channel = 0;
-            exin = unique(wspecs.in); exout = unique(wspecs.out);
-            
-            for k = 1:length(wspecs.performance)
-                spec = wspecs.performance{k};
+            exin = Win.in; exout = Wout.out;
+            for k = 1:length(norms)
+                spec = norms{k};
                 channel = channel + 1;
                 if isH2(spec)
                     ch.H2 = [ch.H2 channel];
@@ -532,7 +539,7 @@ classdef Solver
                     error('Unknown type of norm. Not H2 nor Hinf.');
                 end
                 
-                ch_p = spec.ch_p; 
+                ch_p = spec.ch_p;
                 assert(all(ismember(unique(ch_p.in),exin,false)),'Contact the developers');
                 assert(all(ismember(unique(ch_p.out),exout,false)),'Contact the developers');
                 ch.Out{channel} = transpose(selection(unique(ch_p.out),exout));

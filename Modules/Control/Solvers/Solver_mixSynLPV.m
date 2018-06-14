@@ -75,45 +75,30 @@ classdef Solver_mixSynLPV < Solver
         
             % Compute plant state-space
             specs = rescale(specs,'constr+bound');
-            P = Solver.plant(config,specs,vars);
+            [P,~,~,ch] = Solver.plant(config,specs,vars);
           
             % Weights for the norms in the objective
             alpha = zeros(1,length(specs.performance)); 
             alpha(1,1:specs.nobj) = cell2mat(cellfun(@(x) scale(x), specs.performance(1:specs.nobj), 'un', 0))';
             
             % Build the channel structure
-            n_p = length(specs.performance);
-            in_find = P.in;
-            out_find = P.out; 
-            in_index = 0;
-            out_index = 0;
-            channels(n_p) = struct('performance',[],'In',[],'Out',[]);
-            for j = 1:n_p
-                channels(j).performance = normtype(specs.performance{j});
-                if j > specs.nobj
-                    thisnorm = specs.performance{j}.norm;
+            channels(length(ch.In)) = struct('performance',[],'In',[],'Out',[]);
+            for j = 1:length(ch.In)
+                if ismember(j,ch.Hinf)
+                    channels(j).performance = inf;
+                elseif ismember(j,ch.H2)
+                    channels(j).performance = 2;
                 else
-                    thisnorm = specs.performance{j};
+                    error('cannot process performance type: contact the developers');
                 end
-                if  isoutput(thisnorm)
-                    [~,in_] = ismember(thisnorm.ch_p.in,in_find);
-                    Nout = size(thisnorm.W_out,1);
-                    out_ = out_index + (1:Nout);
-                    out_index = out_index + Nout;
-                else
-                    [~,out_] = ismember(thisnorm.ch_p.out,out_find);
-                    Nin = size(thisnorm.W_out,2);
-                    in_ = in_index + (1:Nin);
-                    in_index = in_index + Nin;
-                end
-                channels(j).In = in_;
-                channels(j).Out = out_;
-            end
+                [channels(j).In,~] = find(ch.In{j});
+                [~,channels(j).Out] = find(ch.Out{j});
+            end            
 
             % Solver input
             ncont = length(specs.ctrl_in);
             nmeas = length(specs.ctrl_out);
-            P = simplify(P.content(1));
+            P = simplify(P);
             [self.K,self.info] = LPV_unstructured_mix(P,nmeas,ncont,alpha,channels,P.parameters(),self.options);
             self.solved = true;
             

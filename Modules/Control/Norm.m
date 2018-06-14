@@ -57,10 +57,10 @@ classdef Norm < Specification
                     if isa(varargin{1},'Channel')
                         self.ch_p = varargin{1};
                         self.W_in = fromstd(varargin{2});
-                        self.W_out = eye(length(self.ch_p.out));
+                        self.W_out = fromstd(eye(length(self.ch_p.out)));
                     elseif isa(varargin{2},'Channel')
                         self.ch_p = varargin{2};
-                        self.W_in = eye(length(self.ch_p.in));
+                        self.W_in = fromstd(eye(length(self.ch_p.in)));
                         self.W_out = fromstd(varargin{1});
                     elseif isa(varargin{1},'Norm') && isnumeric(varargin{2})
                         self = varargin{1};
@@ -78,6 +78,19 @@ classdef Norm < Specification
             assert((size(self.W_in,1)==length(self.ch_p.in)),'Input weight dimensions do not correspond to the channel');
             assert((size(self.W_out,2)==length(self.ch_p.out)),'Output weight dimensions do not correspond to the channel');
             
+        end
+        
+        function disp(self)
+        % Print information
+            if isH2(self)
+                type = 'H2';
+            else
+                type = 'H-infinity';
+            end
+            inputs = ['[',strjoin(arrayfun(@(x)num2str(x.UUID),self.ch_p.in','un',0),';'),']'];
+            outputs = ['[',strjoin(arrayfun(@(x)num2str(x.UUID),self.ch_p.out','un',0),';'),']'];
+            
+            disp([type, ' norm on channel ', self.ch_p.name, ' : ' inputs, ' ->  ', outputs]);
         end
         
         function b = isHinf(self)
@@ -101,7 +114,7 @@ classdef Norm < Specification
         %
         % Return values:
         %  b : true if the norm has a non-static output weight @type logical
-            b = arrayfun(@(x) ~isnumeric(x.W_out),self);
+            b = arrayfun(@(x) ~isequal(x.W_out,SSmod(eye(size(x.W_out,2)))),self);
         end
         
         function b = isinput(self)
@@ -109,7 +122,7 @@ classdef Norm < Specification
         %
         % Return values:
         %  b : true if the norm has a non-static input weight @type logical
-            b = arrayfun(@(x) ~isnumeric(x.W_in),self);
+            b = arrayfun(@(x) ~isequal(x.W_in,SSmod(eye(size(x.W_in,1)))),self);
         end
         
         function b = isstable(self)
@@ -128,6 +141,26 @@ classdef Norm < Specification
             b = false;
             if ~isnumeric(self.W_in), b = b | isparametric(self.W_in); end
             if ~isnumeric(self.W_out), b = b | isparametric(self.W_out);end
+        end
+        
+        function b = compin(self,other)
+        % Checks whether the two norms have the same input and same input weight
+        %
+        % Return values:
+        %  b : true if the norms share the same input and weight @type logical
+            bw = sscomp(self.W_in, other.W_in);
+            bs = isalias(self.ch_p.in,other.ch_p.in);
+            b = bw && bs;
+        end
+        
+        function b = compout(self,other)
+        % Checks whether the two norms have the same output and same output weight
+        %
+        % Return values:
+        %  b : true if the norms share the same output and weight @type logical
+            bw = sscomp(self.W_out, other.W_out);
+            bs = isalias(self.ch_p.out,other.ch_p.out);
+            b = bw && bs;
         end
         
         function s = scale(self)
@@ -291,8 +324,7 @@ classdef Norm < Specification
                 assert(sscomp(self.W_in,other.W_in), 'If you want to concatenate norms vertically, their input weights should be equal. Use blkdiag instead.');
                 if self.p ~= other.p
                     error('Cannot stack 2 norms of different types.');
-                else 
-                    assert(self.W_in==other.W_in);
+                else
                     ch_p_ = [self.ch_p;other.ch_p];
                     W_out_ = blkdiag(self.W_out,other.W_out);
                     W_in_ = self.W_in;
@@ -409,6 +441,30 @@ classdef Norm < Specification
             self.W_in = W_in; 
         end
         
+        function w = getWin(self)
+        % Returns the input weight
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %
+        % Return values:
+        %  w : the input weight @type DynamicSystem
+        
+            w = self.W_in;
+        end
+        
+        function w = getWout(self)
+        % Returns the output weight
+        %
+        % Parameters:
+        %   self: the norm @type Norm
+        %
+        % Return values:
+        %  w : the output weight @type DynamicSystem
+        
+            w = self.W_out;
+        end
+        
         function self = setin(self,signal)
         % Sets the input signals of the norm channel.
         %
@@ -513,7 +569,7 @@ classdef Norm < Specification
     end
     
     methods(Static)
-        function self = dealscale(self,scale)
+        function self = dealscale(self,scale,io)
         % Includes the scale of the norm in the weights and resets the
         % norm's scale to 1 (or empty). Is a static method since it is also
         % possible to call it on cells. 
@@ -553,6 +609,92 @@ classdef Norm < Specification
                     self.W_out = fromstd(eye(length(self.ch_p.out))*scale);
                 end 
                 self.wscale = [];
+            end
+        end
+        
+        function [unorms,ui,i] = unique(norms,io)
+        % Compute the unique weighted inputs or outputs of a series of norms 
+        %
+        % Parameters:
+        %   norms: cell of norms (\c Norm or \c cell)
+        %   io: string to set comparison: input ('in') or output ('out')
+        %   (\c strings)
+        %
+        % Return values:
+        %  unorms: cell of the unique norms @type cell
+        %  i: index for each element in norms to the corresponding element 
+        %  in unorms @type double
+        
+            % input data formatting
+            switch(io)
+                case 'in'
+                    signals = cellfun(@(x) x.ch_p.in,norms,'un',0);
+                    weights = cellfun(@(x) x.W_in,norms,'un',0);
+                case 'out'
+                    signals = cellfun(@(x) x.ch_p.out,norms,'un',0);
+                    weights = cellfun(@(x) x.W_out,norms,'un',0);
+            end
+
+            % loop through norms to look for unique channels
+            ui = 1; % indices of unique norms: norms(ui) == unorms
+            i = ones(1,length(norms)); % indices so that unorms(i(k)) == norms(k)
+            for k = 2:length(norms)
+                bs = cellfun(@(x) isalias(signals{k},x),signals(ui));
+                bw = cellfun(@(x) sscomp(weights{k},x),weights(ui));
+                j = find(bs & bw);
+                assert(length(j) < 2, 'There was more than one match for the norm which should not happen!');
+                if ~isempty(j)
+                    i(k) = j;
+                else
+                    ui(end+1) = k;
+                    i(k) = length(ui);
+                end
+            end
+
+            % construct output
+            unorms = norms(ui);            
+        end
+        
+        function [sys,connections,norms] = tofilter(norms,io)
+            [~,ui,i] = Norm.unique(norms,io);
+            
+            switch(io)
+                case 'in'
+                    signals = cellfun(@(x) x.ch_p.in,norms(ui),'un',0);
+                    weights = cellfun(@(x) transpose(x.W_in),norms(ui),'un',0);
+                case 'out'
+                    signals = cellfun(@(x) x.ch_p.out,norms(ui),'un',0);
+                    weights = cellfun(@(x) x.W_out,norms(ui),'un',0);
+            end
+            
+            filter = blkdiag(weights{:});
+            signals = vertcat(signals{:});
+            [signals,IA,IC] = unique(signals,'stable');
+            C = zeros(length(IC),length(IA));
+            ind = sub2ind(size(C),1:length(IC),IC');
+            C(ind) = 1;
+            filter = filter*C;
+            if isnumeric(filter), filter = SSmod(filter); end
+            
+            switch(io)
+                case 'in'
+                    sys = IOSystem(transpose(filter));
+                    connections = (sys.out == signals);
+                    counter = 0;
+                    for k = ui
+                        norms{k} = setin(norms{k}, sys.in(counter+(1:length(norms{k}.ch_p.in))));
+                        counter = counter + length(norms{k}.ch_p.in);
+                    end
+                    for k = 1:length(i), norms{k} = setin(norms{k},norms{ui(i(k))}.ch_p.in); end
+                case 'out'
+                    sys = IOSystem(filter);
+                    connections = (sys.in == signals);
+                    counter = 0;
+                    for k = ui
+                        norms{k} = setout(norms{k}, sys.out(counter+(1:length(norms{k}.ch_p.out))));
+                        counter = counter + length(norms{k}.ch_p.out);
+                    end
+                    for k = 1:length(i), norms{k} = setout(norms{k},norms{ui(i(k))}.ch_p.out); end
             end
         end
     end

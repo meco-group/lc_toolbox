@@ -75,7 +75,7 @@ classdef Solver_mixedHinfsyn < Solver
             
             % Compute plant state-space
             specs = specs.rescale('constr+bound');
-            P = Solver.plant(config,specs,vars);
+            [P,~,~,ch] = Solver.plant(config,specs,vars);
             
             % Information to the solver
             alpha = zeros(length(specs.performance),1); % Setup which channels are objectives and which are constraints
@@ -86,7 +86,8 @@ classdef Solver_mixedHinfsyn < Solver
             ncont = length(specs.ctrl_in);
             nmeas = length(specs.ctrl_out);
             P = std(P);
-            if all(cellfun(@isoutput, specs.performance))
+            
+            if isequal(ch.In{1},ch.In{:})
                 Mz = cellfun(@(x) size(x.W_out,1),specs.performance);
             else
                 Mz = cellfun(@(x) size(x.W_in,2),specs.performance);
@@ -116,7 +117,7 @@ classdef Solver_mixedHinfsyn < Solver
             % Throw warning
             if specs.nobj > 0
                 warning('off','backtrace');
-                warning('mixedHinfsyn considers the squared norms as objective, i.e. obj = a*|.|² +  b*|.|² + ..., which is slightly different than the way you formulated it (without squares!). See the mixedHinfsyn documentation for more information.');
+                warning('mixedHinfsyn considers the squared norms as objective, i.e. obj = a*|.|ï¿½ +  b*|.|ï¿½ + ..., which is slightly different than the way you formulated it (without squares!). See the mixedHinfsyn documentation for more information.');
                 warning('on','backtrace');
             end
         end

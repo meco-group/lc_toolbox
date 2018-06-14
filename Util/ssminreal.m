@@ -95,6 +95,12 @@ if rtot > 0
     if flag
         sysout = sysin;
         sysout = sysout.setdssdata(A,B,C,D,E);
+        try
+            sysout.x0 = Tr*sysin.x0;
+            sysout.x0(1:rtot) = [];
+        catch
+            sysout.x0 = zeros(size(A,1),1);
+        end
     else
         sysout = dss(A,B,C,D,E,sysin);
     end

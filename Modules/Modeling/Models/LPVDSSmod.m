@@ -63,8 +63,10 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LPVDSSmod < AbstractDSSmod & Ab
         end
         
         function mod = evalme(self,val,args)
-            if isa(args,'SchedulingParameter'); args = {args}; end;
-            args = cellfun(@(x) x.tensor_basis.arguments,args,'un',0); % behind the scenes args are always strings
+            if ~iscell(args); args = {args}; end;
+            if ~all(cellfun(@ischar,args))
+                args = cellfun(@(x) x.tensor_basis.arguments,args,'un',0); % behind the scenes args are always strings
+            end
             [As,Bs,Cs,Ds,Es] = self.eval(val,args);
             mod = LTIDSSmod(squeeze(As),squeeze(Bs),squeeze(Cs),squeeze(Ds),squeeze(Es),self.Ts);
         end

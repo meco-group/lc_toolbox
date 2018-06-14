@@ -93,10 +93,11 @@ classdef Solver_mixedHinfsynMIMO < Solver
             nmeas = length(specs.ctrl_out);
 
             tic;
-            stdP = std(P);
-            if isnumeric(Wo); Wo = ss(Wo); Wo.Ts = stdP.Ts; else; Wo = std(Wo); end
-            if isnumeric(Wi); Wi = ss(Wi); Wi.Ts = stdP.Ts; else; Wi = std(Wi); end
-            [K, gamma, ~] = mixedHinfsynMIMO(stdP,Wi,Wo,nmeas,ncont,alpha,beta,ch,self.options);
+%             stdP = std(P);
+%             if isnumeric(Wo); Wo = ss(Wo); Wo.Ts = stdP.Ts; else Wo = std(Wo); end
+%             if isnumeric(Wi); Wi = ss(Wi); Wi.Ts = stdP.Ts; else Wi = std(Wi); end
+            keyboard
+            [K, gamma, ~] = mixedHinfsynMIMO(P,Wi,Wo,nmeas,ncont,alpha,beta,ch,self.options);
             self.info.time = toc;
             self.K = fromstd(K);
             self.gamma = gamma(:,1); 
@@ -131,36 +132,36 @@ classdef Solver_mixedHinfsynMIMO < Solver
         %  ch: structure defining the channels corresponding to the
         %  specifications @type struct
         
-            Wo = [];
-            Wi = [];
-            stabspecs = specs;
-            
-            % Set up unstable weights
-            for k = 1:length(specs.performance)
-                
-                [GSo,GNSo] = stabsep(fromstd(specs.performance{k}.W_out));
-                [GSi,GNSi] = stabsep(fromstd(specs.performance{k}.W_in));
-                if GNSo.nx == 0 % stable weight
-                    Wo = blkdiag(Wo,eye(size(specs.performance{k}.W_out,1)));
-                elseif GSo.nx == 0 % unstable weight
-                    Wo = blkdiag(Wo,specs.performance{k}.W_out);
-                    stabspecs.performance{k} = setWout(stabspecs.performance{k},eye(size(specs.performance{k}.W_out,1)));
-                else
-                    error('One of your output weights contains both stable and unstable poles, which I cannot separate. Make all poles unstable in case you want a weight with integrators and make all poles stable otherwise.')
-                end
-                if GNSi.nx == 0
-                    Wi = blkdiag(Wi,eye(size(specs.performance{k}.W_in,1)));
-                elseif GSi.nx == 0
-                    Wi = blkdiag(Wi,specs.performance{k}.W_in);
-                    stabspecs.performance{k} = setWin(stabspecs.performance{k},eye(size(specs.performance{k}.W_in,1)));
-                else
-                    error('One of your input weights contains both stable and unstable poles, which I cannot separate. Make all poles unstable in case you want a weight with integrators and make all poles stable otherwise.')
-                end
-            end
-                
-            [P,wspecs] = Solver.plant(config,stabspecs,vars,false);
-            
-            ch = Solver.channels(wspecs);   
+%             Wo = [];
+%             Wi = [];
+%             stabspecs = specs;
+%             
+%             % Set up unstable weights
+%             for k = 1:length(specs.performance)
+%                 
+%                 [GSo,GNSo] = stabsep(fromstd(specs.performance{k}.W_out));
+%                 [GSi,GNSi] = stabsep(fromstd(specs.performance{k}.W_in));
+%                 if GNSo.nx == 0 % stable weight
+%                     Wo = blkdiag(Wo,eye(size(specs.performance{k}.W_out,1)));
+%                 elseif GSo.nx == 0 % unstable weight
+%                     Wo = blkdiag(Wo,specs.performance{k}.W_out);
+%                     stabspecs.performance{k} = setWout(stabspecs.performance{k},eye(size(specs.performance{k}.W_out,1)));
+%                 else
+%                     error('One of your output weights contains both stable and unstable poles, which I cannot separate. Make all poles unstable in case you want a weight with integrators and make all poles stable otherwise.')
+%                 end
+%                 if GNSi.nx == 0
+%                     Wi = blkdiag(Wi,eye(size(specs.performance{k}.W_in,1)));
+%                 elseif GSi.nx == 0
+%                     Wi = blkdiag(Wi,specs.performance{k}.W_in);
+%                     stabspecs.performance{k} = setWin(stabspecs.performance{k},eye(size(specs.performance{k}.W_in,1)));
+%                 else
+%                     error('One of your input weights contains both stable and unstable poles, which I cannot separate. Make all poles unstable in case you want a weight with integrators and make all poles stable otherwise.')
+%                 end
+%             end
+%                 
+            [P,Wo,Wi,ch] = Solver.plant(config,specs,vars);
+            P = std(P);
+%             ch = Solver.channels(wspecs,P);   
             for i = 1:length(ch.In)
                 [r,~] = find(ch.In{i});
                 [~,c] = find(ch.Out{i});

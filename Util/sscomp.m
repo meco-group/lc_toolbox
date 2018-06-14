@@ -41,47 +41,52 @@ end
 
 sz1 = size(ss1);
 sz2 = size(ss2);
-assert(all(sz1==sz2),'Model sizes should correspond');
-if isa(ss1,'Gridmod') && isa(ss2,'Gridmod')
-    if all(ss1.gridsize() == ss2.gridsize())
-        equal = true;
-        error = 0;
-        for k = 1:prod(ss1.gridsize())
-            equal = equal && sscomp(ss1.grid_{k},ss2.grid_{k});
+
+if all(sz1==sz2)
+    if isa(ss1,'Gridmod') && isa(ss2,'Gridmod')
+        if all(ss1.gridsize() == ss2.gridsize())
+            equal = true;
+            error = 0;
+            for k = 1:prod(ss1.gridsize())
+                equal = equal && sscomp(ss1.grid_{k},ss2.grid_{k});
+            end
+        else
+            equal = true;
+            error = -1;
         end
     else
-        equal = true;
-        error = -1;
+        % Make full descriptor systems
+        if(isempty(ss1.E))
+            ss1.E = eye(size(ss1.A));
+        end
+        if(isempty(ss2.E))
+            ss2.E = eye(size(ss2.A));
+        end
+
+        if xor((rank(ss1.E,tol)~=size(ss1.E,1)),(rank(ss2.E,tol)~=size(ss2.E,1)))
+            disp('1 of the systems is improper. Try to put it in a proper form using dss2ss and check again.')
+            error = 0;
+            equal = 0;
+        else
+            if((rank(ss1.E,tol)~=size(ss1.E,1))&&(rank(ss2.E,tol)~=size(ss2.E,1)))
+                X1 = ss1.E; B1 = ss1.B; C1 = ss1.C; Y1 = ss1.A;
+                X2 = ss2.E; B2 = ss2.B; C2 = ss2.C; Y2 = ss2.A;
+            else
+                X1 = ss1.A; B1 = ss1.B; C1 = ss1.C; Y1 = ss1.E;
+                X2 = ss2.A; B2 = ss2.B; C2 = ss2.C; Y2 = ss2.E;
+            end
+            [X1,B1,C1,~,~,~] = diagE_ip(X1,B1,C1,Y1);
+            [X2,B2,C2,~,~,~] = diagE_ip(X2,B2,C2,Y2);
+            state_error = C1*X1*B1-C2*X2*B2;
+            output_error = ss1.D-ss2.D;
+
+            error = max(abs([state_error(:);output_error(:)]));
+            equal = (error < tol);
+        end
     end
 else
-    % Make full descriptor systems
-    if(isempty(ss1.E))
-        ss1.E = eye(size(ss1.A));
-    end
-    if(isempty(ss2.E))
-        ss2.E = eye(size(ss2.A));
-    end
-
-    if xor((rank(ss1.E,tol)~=size(ss1.E,1)),(rank(ss2.E,tol)~=size(ss2.E,1)))
-        disp('1 of the systems is improper. Try to put it in a proper form using dss2ss and check again.')
-        error = 0;
-        equal = 0;
-    else
-        if((rank(ss1.E,tol)~=size(ss1.E,1))&&(rank(ss2.E,tol)~=size(ss2.E,1)))
-            X1 = ss1.E; B1 = ss1.B; C1 = ss1.C; Y1 = ss1.A;
-            X2 = ss2.E; B2 = ss2.B; C2 = ss2.C; Y2 = ss2.A;
-        else
-            X1 = ss1.A; B1 = ss1.B; C1 = ss1.C; Y1 = ss1.E;
-            X2 = ss2.A; B2 = ss2.B; C2 = ss2.C; Y2 = ss2.E;
-        end
-        [X1,B1,C1,~,~,~] = diagE_ip(X1,B1,C1,Y1);
-        [X2,B2,C2,~,~,~] = diagE_ip(X2,B2,C2,Y2);
-        state_error = C1*X1*B1-C2*X2*B2;
-        output_error = ss1.D-ss2.D;
-
-        error = max(abs([state_error(:);output_error(:)]));
-        equal = (error < tol);
-    end
+    error = Inf;
+    equal = false;
 end
 end
 

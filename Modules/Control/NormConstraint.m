@@ -40,6 +40,11 @@ classdef NormConstraint < Specification
             self.bound = bound;
         end 
         
+        function disp(self)
+        % Print information
+            disp(self.norm);
+        end
+        
         function le(varargin)
         % Issues an error when the user tries to change the upper bound
         % after creation of the constraint. 

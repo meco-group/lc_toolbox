@@ -180,7 +180,13 @@ switch c_or_d
                         j = j + 1;
                     end
                     P = opti.Function(TensorBasis(A,Param_A),[n,n],'symmetric');
-                    dPdt = opti.Function (TensorBasis(dA,Param_A),[n,n],'symmetric');
+                        for l = 1:length(param)
+                            if ~(all(param{l}.rate==0))
+                                dPdt = opti.Function (TensorBasis(dA,Param_A),[n,n],'symmetric');                                
+                            else
+                                dPdt = P;  
+                            end
+                        end
                         for l = 1:length(param)
                             if ~(all(param{l}.rate==0))
                                 P = (a{l}^(n_deg(l)-1))*P;

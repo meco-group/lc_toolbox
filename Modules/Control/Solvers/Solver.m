@@ -226,7 +226,7 @@ classdef Solver
                       
                       % check whether the channel occurs in the specs 
                       chs_ = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
-                      chs_ = cellfun(@(x) x, chs_); pl = zeros(size(chs_));
+                      chs_ = cat(1,chs_{:}); pl = zeros(size(chs_));
                       for j=1:length(chs_)
                           if length(chs_(j))==length(thischan) && chs_(j)==thischan
                               pl(j)=1;

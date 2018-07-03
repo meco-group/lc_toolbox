@@ -544,8 +544,11 @@ classdef(InferiorClasses = {?zpk,?ss,?tf}) Signal
             end
         end
         
-        function [sys,conn] = system(self)
+        function [sys,conn] = system(self,name)
         % Creates a system realizing a linear combination.
+        %
+        % Parameters:
+        %  name : name of the resulting linear combination model
         %
         % Return values:
         %  sys : the system including the gains and sums required for
@@ -556,10 +559,12 @@ classdef(InferiorClasses = {?zpk,?ss,?tf}) Signal
                 error('Cannot make a system of signals of which some are a linear combination and others are not');
             end
             if all(c)
+                mod = SSmod(blkdiag(self.multipliers));
+                mod.name = name;
                 in_ = transpose(horzcat(self.components));
                 out_ = self;
                 sys = IOSystem(length(in_),length(out_));
-                sys = add(sys,SSmod(blkdiag(self.multipliers)));
+                sys = add(sys,mod);
                 conn = [in_==sys.in;out_==sys.out];
             else
                 sys = [];

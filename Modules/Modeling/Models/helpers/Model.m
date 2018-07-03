@@ -39,6 +39,10 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
             self.name = '';
         end
         
+        function self = setName(self,name)
+            self.name = name;
+        end
+        
         function [varargout] = size(self,dim)
             siz = [nout(self),nin(self)];
 

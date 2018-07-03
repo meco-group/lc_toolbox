@@ -96,7 +96,6 @@ classdef Solver_mixedHinfsynMIMO < Solver
 %             stdP = std(P);
 %             if isnumeric(Wo); Wo = ss(Wo); Wo.Ts = stdP.Ts; else Wo = std(Wo); end
 %             if isnumeric(Wi); Wi = ss(Wi); Wi.Ts = stdP.Ts; else Wi = std(Wi); end
-            keyboard
             [K, gamma, ~] = mixedHinfsynMIMO(P,Wi,Wo,nmeas,ncont,alpha,beta,ch,self.options);
             self.info.time = toc;
             self.K = fromstd(K);

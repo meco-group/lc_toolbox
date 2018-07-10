@@ -573,7 +573,7 @@ switch opts.spec
     T44 = Y;
     T45 = zeros(nx,nw);
     T46 = (Cz+Dzu*Dc_hat*Cy)';
-    T55 = gam2*eye(nw);
+    T55 = eye(nw);
     T56 = (Dzw+Dzu*Dc_hat*Dyw)';
     T66 = gam2*eye(nz);
     
@@ -596,7 +596,7 @@ switch opts.spec
     T24 = dY*A+Bc_hat*Cy;
     T25 = dY*Bw+Bc_hat*Dyw;
     T33 = X;
-    T34 = eye(nx);
+    T34 = gam2*eye(nx);
     T35 = zeros(nx,nw);
     T44 = Y;
     T45 = zeros(nx,nw);

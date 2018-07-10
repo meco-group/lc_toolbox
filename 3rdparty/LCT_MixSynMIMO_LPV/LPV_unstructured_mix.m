@@ -281,7 +281,7 @@ end
 
 %objective
 objective = alpha(:)'*[gam2{:}]'*opts.scaling_obj;
-
+gamma = [gam2{:}]*diag(alpha); 
 %SolvetheSDP
 opti.minimize(objective)
 opti.subject_to(constraints)
@@ -299,7 +299,8 @@ end
 [pr,~]               = checkset(opti.yalmip_constraints); % primal residual
 if pr > -opts.tolerance
     sol_info.feasible  = 1;
-    sol_info.objective = sol.value(objective);
+    sol_info.objective = sqrt(sol.value(objective));
+    sol_info.gamma = sol.value(gamma);
     switch opts.spec
         case {2,inf}
 %             sol_info.gam2 = sol.value(gam2);
@@ -538,6 +539,7 @@ for j = 1:n_pspecs
 end
 %PD LMIs
 Q = [X, eye(nx); eye(nx), Y];
+dQ = [dX, eye(nx); eye(nx), dY];
 
         for j = 1:n_pspecs
              if channel(j).performance == inf
@@ -645,7 +647,7 @@ end
 comp_time_parsing = cputime - t_start;
 
 % constraints
-constraints = {Q >= 0};
+constraints = {Q >= 0, dQ >= 0};
 for j = 1:n_pspecs
     constraints = [constraints, {Term{j} <= 0}];
     if alpha(j)==0
@@ -655,6 +657,7 @@ end
 
 %objective
 objective = alpha(:)'*[gam2{:}]'*opts.scaling_obj;
+gamma = [gam2{:}]*diag(alpha); 
 
 %SolvetheSDP
 opti.minimize(objective)
@@ -673,7 +676,8 @@ end
 [pr,~]               = checkset(opti.yalmip_constraints); % primal residual
 if pr > -opts.tolerance
     sol_info.feasible  = 1;
-    sol_info.objective = sol.value(objective);
+    sol_info.objective = sqrt(sol.value(objective));
+    sol_info.gamma = sol.value(gamma);
     switch opts.spec
         case {2,inf}
 %             sol_info.gam2 = sol.value(gam2);

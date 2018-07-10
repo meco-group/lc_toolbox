@@ -106,18 +106,18 @@ classdef Solver_mixSynLPV < Solver
             self.performance = specs.performance;
             self.gamma = zeros(1,length(self.performance));
             self.mu = zeros(1,length(self.performance));
-            
+            %self.objective = self.info.objective;
             for k = 1:length(channels)
                 if k <= specs.nobj
-                    val = sqrt(self.info.objective);
+                    val = sqrt(self.info.gamma);
                 else
-                    val = 1;
+                    val(k) = 1;
                 end
                 
                 if channels(k).performance == Inf
-                    self.gamma(k) = val;
+                    self.gamma(k) = val(k);
                 else
-                    self.mu(k) = val;
+                    self.mu(k) = val(k);
                 end
             end
             

@@ -93,7 +93,7 @@ classdef Solver_SynLPV < Solver
             [self.K,self.info] = LPV_unstructured_OF(P,nmeas,ncont,P.parameters(),self.options);
             
             % Save solver output
-            self.gamma = self.info.objective;
+            self.gamma = sqrt(self.info.objective);
             self.solved = true;
             self.performance{1} = specs.performance{1}*(1/self.gamma);
         end

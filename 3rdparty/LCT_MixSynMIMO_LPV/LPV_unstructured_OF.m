@@ -60,7 +60,7 @@ function [K,sol_info] = LPV_unstructured_OF(sys,ny,nu,param,varargin)
 default = struct('spec',inf,'objective','L1','var_deg',1,...
     'var_knots',0,'relax_deg',0,'relax_mp',0,'tolerance',1e-6,...
     'verbose',0,'scaling_obj',1,'solver','mosek',...
-    'controller_dependency','a');
+    'controller_dependency','a','constantLyap','false');
 
 if nargin == 5
     opts = mergestruct(varargin{1},default);
@@ -73,14 +73,19 @@ switch sys.Ts
             case 'ada' % controller depending on parameter and its derivative
                 [K,sol_info] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,0);
             case 'a'   % controller depending on parameter only
-                [K1,Primal1] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,1);
-                [K2,Primal2] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,2);
-                if ((Primal1.objective <= Primal2.objective) && ~isinf(Primal1.objective))
-                    sol_info = Primal1; K = K1;
-                elseif Primal1.objective > Primal2.objective
-                    sol_info = Primal2; K = K2;
-                else
-                    error('Sorry, SDP : INFEASIBLE problem, cannot go further')
+                switch opts.constantLyap
+                    case 'false'
+                        [K1,Primal1] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,1);
+                        [K2,Primal2] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,2);
+                        if ((Primal1.objective <= Primal2.objective) && ~isinf(Primal1.objective))
+                            sol_info = Primal1; K = K1;
+                        elseif Primal1.objective > Primal2.objective
+                            sol_info = Primal2; K = K2;
+                        else
+                            error('Sorry, SDP : INFEASIBLE problem, cannot go further')
+                        end
+                    case 'true'
+                        [K,sol_info] = LPV_unstructured_OF_primal(sys,ny,nu,param,opts,3);
                 end
             otherwise
                 error('Wrong selection of controller dependency, must be ''a'' or ''ada''.');
@@ -90,7 +95,12 @@ switch sys.Ts
             case 'ada' % controller depending on parameter and its derivative
                 [K,sol_info] = LPV_unstructured_OF_primal_DT(sys,ny,nu,param,opts,0);
             case 'a'   % controller depending on parameter only
-                [K,sol_info] = LPV_unstructured_OF_primal_DT(sys,ny,nu,param,opts,1);
+                switch opts.constantLyap
+                    case 'false'
+                        [K,sol_info] = LPV_unstructured_OF_primal_DT(sys,ny,nu,param,opts,1);
+                    case 'true'
+                        [K,sol_info] = LPV_unstructured_OF_primal_DT(sys,ny,nu,param,opts,3);
+                end
 %                 [K2,Primal2] = LPV_unstructured_OF_primal_DT(sys,ny,nu,param,opts,2);
 %                 if ((Primal1.objective <= Primal2.objective) && ~isinf(Primal1.objective))
 %                     sol_info = Primal1; K = K1;
@@ -167,7 +177,7 @@ else   error('opts.var_knots has incorrect dimension'); end
         end
             TB = TensorBasis(B,args);
         
-% construct LMI variables  
+% construct LMI variables 
 switch dep
     case 0 % X and Y dependent on constant and BRV parameters
         [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
@@ -178,6 +188,11 @@ switch dep
     case 2 % Y depends on constant parameters only
         [X,dXdt] = build_Lyapmat(TB,param,nx,opti,'brv','c');
         [Y,dYdt] = build_Lyapmat(TB,param,nx,opti,'constant','c');
+    case 3
+        X = opti.Function(TensorBasis({},{}),[nx,nx],'symmetric');
+        dXdt = zeros(nx,nx);
+        Y = opti.Function(TensorBasis({},{}),[nx,nx],'symmetric');
+        dYdt = zeros(nx,nx);
     otherwise
         error ('something wrong in script or addition feature not implemented');
 end
@@ -395,7 +410,7 @@ elseif dep == 2 % controller depending on parameter only: Y constant
     M11 = (X_*Y_)';
     M44 = zeros(nx);
 end
-
+if dep~= 3
 nx = size(A_,1);
 Dt = D_;
 Ct = (C_ - D_*PCy_*X_);
@@ -412,7 +427,7 @@ M = {M11      , eye(nx)     , zeros(nx,nut), zeros(nx)    ;...
      At       , zeros(nx)   , Bt           , M44         };
 Nu = eye(nx); 
 Nl = eye(nx);
-
+end
 param_new = [];
 for i = 1:length(param)
     if (param{i}.bounded && dep == 0)
@@ -423,8 +438,15 @@ for i = 1:length(param)
 end
 
 % obtaining controller as an LFTmod object 
-K = LFTmod(M,Nu,Nl,eye(nx),param_new);
-K.Ts = sys.Ts;
+switch dep
+    case {0,1,2}
+        K = LFTmod(M,Nu,Nl,eye(nx),param_new);
+        K.Ts = sys.Ts;
+    case 3
+        [Ak,Bk,Ck,Dk] = controller_recon_cL(PA_,PBu_,PCy_,X_,Y_,A_,B_,C_,D_,param_new);
+        K = SSmod(Ak,Bk,Ck,Dk,param_new);
+        K.Ts = sys.Ts;
+end
 
 % store computation times
 sol_info.comp_time_parsing = comp_time_parsing;
@@ -493,6 +515,11 @@ else   error('opts.var_knots has incorrect dimension'); end
             case 2
                 [X,dX] = build_Lyapmat(TB,param,nx,opti,'brv','d',deg,nknots);
                 [Y,dY] = build_Lyapmat(TB,param,nx,opti,'constant','d');
+            case 3
+                X = opti.Function(TensorBasis({},{}),[nx,nx],'symmetric');
+                dX = X;
+                Y = opti.Function(TensorBasis({},{}),[nx,nx],'symmetric');
+                dY = Y;
             otherwise
                 error ('something wrong in script or addition feature not implemented');
         end
@@ -501,6 +528,8 @@ switch dep
         Ac_hat = opti.Function(X.tensor_basis,[nx,nx],'full');
     case 2
         Ac_hat = opti.Function(Y.tensor_basis,[nx,nx],'full');
+    case 3
+        Ac_hat = opti.Function(TB,[nx,nx],'full');
 end
 Bc_hat = opti.Function(TB,[nx,ny],'full');
 Cc_hat = opti.Function(TB,[nu,nx],'full');
@@ -729,13 +758,14 @@ PA_  = sys.A;
     if dep == 0     % controller depending on parameter and its derivative
         M11 = zeros(nx);
         M44 = dY_*X_;
-    elseif dep == 1 % controller depending on parameter only: X constant
+    elseif dep == 1 || dep == 3 % controller depending on parameter only: X constant
         M11 = zeros(nx);
         M44 = dY_*X_;
     elseif dep == 2 % controller depending on parameter only: Y constant
         M11 = dX_*Y_;
         M44 = zeros(nx);
     end
+if dep ~= 3
 nx = size(A_,1);
 Dt = D_;
 Ct = (C_ - D_*PCy_*X_);
@@ -752,7 +782,7 @@ M = {M11      , eye(nx)      , zeros(nx,nut), zeros(nx)    ;...
      At       , zeros(nx)    , Bt           , M44         };
 Nu = eye(nx); 
 Nl = eye(nx);
-
+end
 param_new = [];
 for i = 1:length(param)
     if (param{i}.bounded)
@@ -763,8 +793,15 @@ for i = 1:length(param)
 end
 
 % obtaining controller as an LFTmod object 
-K = LFTmod(M,Nu,Nl,eye(nx),param_new);
-K.Ts = sys.Ts;
+switch dep
+    case {0,1,2}
+        K = LFTmod(M,Nu,Nl,eye(nx),param_new);
+        K.Ts = sys.Ts;
+    case 3
+        [Ak,Bk,Ck,Dk] = controller_recon_cL(PA_,PBu_,PCy_,X_,Y_,A_,B_,C_,D_,param_new);
+        K = SSmod(Ak,Bk,Ck,Dk,param_new);
+        K.Ts = sys.Ts;
+end
 
 % store computation times
 sol_info.comp_time_parsing = comp_time_parsing;

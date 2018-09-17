@@ -17,7 +17,7 @@
 
 clear all; clc; close all
 
-example_type = 'uvar_bounded';
+example_type = 'mvar';
 
 %scheduling parameters
 switch example_type
@@ -57,6 +57,6 @@ C = [1 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0; 1 0 0 0; 0 0 0 1];
 D = [zeros(4,2), [0 0; 0 0; 1 0; 0 1]; zeros(2,2), zeros(2,2)];
 nu = 2; ny = 2; 
 sys.A = A; sys.B = B; sys.C = C; sys.D = D; sys.Ts = 0;
-options = struct('var_deg',1,'var_knots',0,'controller_dependency','a','spec',inf,'objective','wc','verbose',2);
+options = struct('var_deg',1,'var_knots',0,'controller_dependency','a','spec',inf,'objective','wc','verbose',2,'constantLyap','true','ltic','true');
 % set up and solve the LPV control problem
 [K,sol_info] = LPV_unstructured_OF(sys,ny,nu,param,options)

@@ -60,7 +60,7 @@ function [K,sol_info] = LPV_unstructured_OF(sys,ny,nu,param,varargin)
 default = struct('spec',inf,'objective','L1','var_deg',1,...
     'var_knots',0,'relax_deg',0,'relax_mp',0,'tolerance',1e-6,...
     'verbose',0,'scaling_obj',1,'solver','mosek',...
-    'controller_dependency','a','constantLyap','false');
+    'controller_dependency','a','constantLyap','false','ltic','false');
 
 if nargin == 5
     opts = mergestruct(varargin{1},default);
@@ -196,9 +196,15 @@ switch dep
     otherwise
         error ('something wrong in script or addition feature not implemented');
 end
-Ac_hat = opti.Function(TB,[nx,nx],'full');
-Bc_hat = opti.Function(TB,[nx,ny],'full');
-Cc_hat = opti.Function(TB,[nu,nx],'full');
+if strcmp(opts.ltic,'false')
+    Ac_hat = opti.Function(TB,[nx,nx],'full');
+    Bc_hat = opti.Function(TB,[nx,ny],'full');
+    Cc_hat = opti.Function(TB,[nu,nx],'full');
+else
+    Ac_hat = opti.Function(TensorBasis({},{}),[nx,nx],'full');
+    Bc_hat = opti.Function(TensorBasis({},{}),[nx,ny],'full');
+    Cc_hat = opti.Function(TensorBasis({},{}),[nu,nx],'full');    
+end
 Dc_hat = zeros(nu,ny);
 switch opts.spec
     case inf
@@ -523,16 +529,22 @@ else   error('opts.var_knots has incorrect dimension'); end
             otherwise
                 error ('something wrong in script or addition feature not implemented');
         end
-switch dep
-    case {0,1}
-        Ac_hat = opti.Function(X.tensor_basis,[nx,nx],'full');
-    case 2
-        Ac_hat = opti.Function(Y.tensor_basis,[nx,nx],'full');
-    case 3
-        Ac_hat = opti.Function(TB,[nx,nx],'full');
+if strcmp(opts.ltic,'false')
+    switch dep
+        case {0,1}
+            Ac_hat = opti.Function(X.tensor_basis,[nx,nx],'full');
+        case 2
+            Ac_hat = opti.Function(Y.tensor_basis,[nx,nx],'full');
+        case 3
+            Ac_hat = opti.Function(TB,[nx,nx],'full');
+    end
+    Bc_hat = opti.Function(TB,[nx,ny],'full');
+    Cc_hat = opti.Function(TB,[nu,nx],'full');
+else
+    Ac_hat = opti.Function(TensorBasis({},{}),[nx,nx],'full');
+    Bc_hat = opti.Function(TensorBasis({},{}),[nx,ny],'full');
+    Cc_hat = opti.Function(TensorBasis({},{}),[nu,nx],'full');    
 end
-Bc_hat = opti.Function(TB,[nx,ny],'full');
-Cc_hat = opti.Function(TB,[nu,nx],'full');
 Dc_hat = zeros(nu,ny);
 switch opts.spec
     case inf

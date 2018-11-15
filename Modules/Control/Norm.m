@@ -220,7 +220,7 @@ classdef Norm < Specification
             else
                 n = b; v = a; pre = false;
             end
-            if isnumeric(v)
+            if isnumeric(v) && isscalar(v)
                 if isempty(n.wscale)
                     n.wscale = v;
                 else
@@ -229,9 +229,17 @@ classdef Norm < Specification
             else
                 v = fromstd(v);
                 if pre
-                    n.W_in = v;
+                    if isempty(n.W_in)
+                        n.W_in = v;
+                    else
+                        n.W_in = n.W_in*v;
+                    end
                 else
-                    n.W_out = v;
+                    if isempty(n.W_out)
+                        n.W_out = v;
+                    else
+                        n.W_out = v*n.W_out;
+                    end
                 end
             end
         end

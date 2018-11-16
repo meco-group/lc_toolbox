@@ -97,6 +97,8 @@ elseif nargin > 13
 end
 
 % Solve the controller design problem
+defopts = sdpsettings();
+opts = mergestruct(opts,defopts); 
 if opts.method == 'P'     % Lyapunov shaping
     [Info] = Pshaping(A,Bw,Bu,Cz,Cy,Dzw,Dzu,Dyw,Dyu,a,b,ch,opts);
 elseif opts.method == 'G' % G-shaping
@@ -341,7 +343,7 @@ for j = ch.H2
 end
 
 % Solve the SDP
-sol = solvesdp(LMIs,obj,sdpsettings('verbose',opts.verbose,'solver',opts.solver));
+sol = solvesdp(LMIs,obj,opts);
 Info.cpusec = sol.solvertime;
 p_res = checkset(LMIs);
 
@@ -593,7 +595,7 @@ for j = ch.H2
 end
 
 % Solve the SDP
-sol = solvesdp(LMIs,obj,sdpsettings('verbose',opts.verbose,'solver',opts.solver));
+sol = solvesdp(LMIs,obj,opts);
 Info.cpusec = sol.solvertime;
 p_res = checkset(LMIs);
 

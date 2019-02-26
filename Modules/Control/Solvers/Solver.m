@@ -34,7 +34,7 @@ classdef Solver
     end
     
     properties (Access = private,Constant)
-        solverlist = {'Hinfsyn','mixedHinfsyn','mixedHinfsynMIMO','mixedHinfsynMIMO_unstab','mixedFixedOrder','systune','HIFOO','SynLPV','mixSynLPV'};
+        solverlist = {'Hinfsyn','mixedHinfsyn','mixedHinfsynMIMO','mixedHinfsynMIMO_unstab','mixedFixedOrder','systune','HIFOO','SynLPV','mixSynLPV','mixedpoleMIMO'};
     end
     
     methods   
@@ -101,7 +101,7 @@ classdef Solver
                       
                       % check whether the channel occurs in the specs 
                       chs = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
-                      chs = cellfun(@(x) x, chs); pl = zeros(size(chs));
+                      chs = cat(1,chs{:}); pl = zeros(size(chs));
                       for j=1:length(chs)
                           if length(chs(j))==length(thischan) && chs(j)==thischan
                               pl(j)=1;
@@ -409,7 +409,7 @@ classdef Solver
                 criteria.unstable = ~(isempty(Woutus.a) && isempty(Winus.a));
                 criteria.improper = false;
                 criteria.parametric = isparametric(specs) | any(cellfun(@(x)isparametric(content(x,1)),cconf));
-
+                criteria.polereg = ~(isempty(specs.region));
                 % Check which solvers can be applied for full order
                 remove = (~[cap.constraints]) & criteria.constraints;
                 remove = remove | ([cap.inout] < criteria.inout);
@@ -417,6 +417,7 @@ classdef Solver
                 remove = remove | ((~[cap.unstable]) & criteria.unstable);
                 remove = remove | ((~[cap.improper]) & criteria.improper);
                 remove = remove | ((~[cap.parametric]) & criteria.parametric);
+                remove = remove | ((~[cap.polereg]) & criteria.polereg);
                 cap(remove) = [];
 
                 % Choose a solver for the problem
@@ -509,9 +510,9 @@ classdef Solver
             Wouts_ = blkdiag(Wouts,ss(eye(length(specs.ctrl_out))));
             Wins_ = blkdiag(Wins,ss(eye(length(specs.ctrl_in))));
             GP = fromstd(Wouts_)*GP*fromstd(Wins_);
-            if ~isparametric(GP)
-                GP = ssminreal(simplify(GP));
-            end
+%             if ~isparametric(GP)
+%                 GP = ssminreal(simplify(GP));
+%             end
             
             % 4. Set removed content back
             restore(vertcat(r{:}));

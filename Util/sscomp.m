@@ -42,6 +42,9 @@ end
 sz1 = size(ss1);
 sz2 = size(ss2);
 
+if isa(ss1,'AbstractLFTmod'); ss1 = simplify(ss1); end
+if isa(ss2,'AbstractLFTmod'); ss2 = simplify(ss2); end
+
 if all(sz1==sz2)
     if isa(ss1,'Gridmod') && isa(ss2,'Gridmod')
         if all(ss1.gridsize() == ss2.gridsize())

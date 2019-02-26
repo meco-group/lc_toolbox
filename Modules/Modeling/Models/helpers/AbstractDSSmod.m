@@ -201,8 +201,8 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) AbstractDSSmod < AbstractLFTmod
         %  Cs : C matrix for the requested parameter combination @type double
         %  Ds : D matrix for the requested parameter combination @type double
         %  Es : E matrix for the requested parameter combination @type double
-            if size(val,1) == length(val); val = val'; end;
-            grid = num2cell(val);
+            if size(val,1) == length(val); val = val'; end
+            if ~iscell(val); grid = num2cell(val); else; grid = val; end
             [As,Bs,Cs,Ds,Es] = grid_eval(self,grid,args);
         end
         

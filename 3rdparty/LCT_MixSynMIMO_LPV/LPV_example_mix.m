@@ -28,7 +28,7 @@ C = [1 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0; 1 0 0 0; 0 0 0 1];
 D = [zeros(4,2), [0 0; 0 0; 1 0; 0 1]; zeros(2,2), zeros(2,2)];
 nu = 2; ny = 2; 
 sys.A = A; sys.B = B; sys.C = C; sys.D = D; sys.Ts = 0;
-options = struct('var_deg',1,'var_knots',0,'controller_dependency','ada','verbose',2,'relax_deg',1);
+options = struct('var_deg',1,'var_knots',0,'controller_dependency','ada','verbose',2,'relax_deg',1,'Dc',0);
 % set up and solve the LPV control problem
         
 % performance specifications
@@ -56,4 +56,4 @@ switch performance
         error('Wrong selection');
 end
 
-[K,sol_info] = LPV_unstructured_mix(sys,ny,nu,c,ch,param,options)
+[K,sol_info] = LPV_unstructured_mix_new(sys,ny,nu,c,ch,param,options)

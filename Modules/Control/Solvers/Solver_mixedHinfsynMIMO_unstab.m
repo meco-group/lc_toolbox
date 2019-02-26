@@ -84,8 +84,8 @@ classdef Solver_mixedHinfsynMIMO_unstab < Solver
                 assert(isstable(specs.performance{k}.W_in),'mixedHinfsynMIMO_unstab does not support unstable input weighting filters. Try mixedHinfsynMIMO instead.');
             end
                 
-            [P,wspecs] = Solver.plant(config,stabspecs,vars);
-            ch = Solver.channels(wspecs);            
+            [P,wspecs,~,ch] = Solver.plant(config,stabspecs,vars);
+            %ch = Solver.channels(wspecs);            
         end
         
         function cap = capabilities()
@@ -96,6 +96,7 @@ classdef Solver_mixedHinfsynMIMO_unstab < Solver
             cap.improper = false;
             cap.parametric = false;
             cap.fixedorder = false;
+            cap.polereg = false;
         end
     end
 end

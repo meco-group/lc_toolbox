@@ -138,5 +138,68 @@ classdef(InferiorClasses = {?zpk,?tf,?ss,?frd}) LPVLFTmod < AbstractLFTmod & Abs
             dmod = lft(fb,self);
             
         end
+        
+        function s = saveobj(self)
+            function [bases,args,coeffs] = getdata(spline)
+                bases = spline.tensor_basis.bases;
+                bases = cellfun(@(x) {x.knots, x.degree}, bases, 'un', 0);
+                args = cellfun(@(x) spline.tensor_basis.argument(x), num2cell(1:length(bases)), 'un', 0);
+                coeffs = spline.coeff.data;
+            end
+            
+            function data = tostruct(matrix)
+                if ~isnumeric(matrix)
+                    [bases,args,coeffs] = getdata(matrix);
+                    data = struct();
+                    data.bases = bases; 
+                    data.args = args;
+                    data.coeffs = coeffs;
+                else
+                    data = matrix;
+                end
+            end
+            
+            s = struct(); 
+            s.M = cellfun(@(x) tostruct(x), self.M, 'un', 0);
+            s.Nu = tostruct(self.Nu);
+            s.Nl = tostruct(self.Nl);
+            s.E = tostruct(self.E);
+            s.Ts = self.Ts;
+            s.parameters = cellfun(@(x) tostruct(x), self.parameters, 'un', 0); 
+            for j=1:length(s.parameters)
+                l = properties(self.parameters{j});
+                for k=1:length(l)
+                    s.parameters{j}.(l{k}) = self.parameters{j}.(l{k});
+                end
+            end
+        end
     end
+    
+    methods(Static)
+        function self = loadobj(s)
+            function spline = setdata(bases,args,coeffs)
+                bases = cellfun(@(x) splines.BSplineBasis(x{1},x{2}), bases, 'un', 0);
+                b = splines.TensorBasis(bases,args);
+                c = splines.Coefficient(coeffs);
+                spline = splines.Function(b,c);
+            end
+            
+            function sp = tospline(strct)
+                if isstruct(strct)
+                    sp = setdata(strct.bases,strct.args,strct.coeffs);
+                else
+                    sp = strct;
+                end
+            end
+            
+            M = cellfun(@(x) tospline(x), s.M, 'un', 0); 
+            Nu = tospline(s.Nu); 
+            Nl = tospline(s.Nl); 
+            E = tospline(s.E); 
+            parameters = cellfun(@(x) SchedulingParameter(x.args{1},splines.Function(splines.TensorBasis({splines.BSplineBasis(x.bases{1}{1},x.bases{1}{2})},x.args),splines.Coefficient(x.coeffs)),x.rate_), s.parameters, 'un', 0);
+            self = LPVLFTmod(M,Nu,Nl,E,parameters,s.Ts);
+        end
+        
+    end
+        
 end

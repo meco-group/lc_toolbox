@@ -35,11 +35,11 @@ classdef Norm < Specification
         % Parameters:
         %   varargin : should have on of these four structures:
         %   -# an output weight (\c numlti or Model), followed by the performance
-        %      Channel, and the input weight (\c numlti or Model) as last argument 
+        %      channel (\c Channel) , and the input weight (\c numlti or Model) as last argument 
         %   -# an output weight (\c numtli or Model), followed by the
-        %      performance Channel
-        %   -# the performance Channel, followed by an input weight (\c numlti or Model)
-        %   -# a performance Channel (no weighting)
+        %      performance channel (\c Channel)
+        %   -# the performance channel (\c Channel), followed by an input weight (\c numlti or Model)
+        %   -# a performance channel (\c Channel) (no weighting)
         %
         % Return values:
         %  self : the weighted norm @type Norm
@@ -53,8 +53,8 @@ classdef Norm < Specification
                     self.ch_p = varargin{2};
                     self.W_in = fromstd(varargin{3});
                     self.W_out = fromstd(varargin{1});
-                case 2
-                    if isa(varargin{1},'Channel')
+                case 2 
+                    if isa(varargin{1},'Channel') 
                         self.ch_p = varargin{1};
                         self.W_in = fromstd(varargin{2});
                         self.W_out = fromstd(eye(length(self.ch_p.out)));
@@ -598,7 +598,7 @@ classdef Norm < Specification
             end
 
             if isa(self,'cell')
-                self = cellfun(@(x,y) {Norm.dealscale(x,{y})}, self, scale);
+                self = cellfun(@(x,y) {Norm.dealscale(x,{y})}, self, scale(:));
             else
                 assert(isa(self,'Norm'), 'dealscale can only operate on Norm objects.');
                 if ~isempty(self.wscale)

@@ -99,7 +99,7 @@ classdef Solver_mixSynLPV < Solver
             ncont = length(specs.ctrl_in);
             nmeas = length(specs.ctrl_out);
             P = simplify(P);
-            [self.K,self.info] = LPV_unstructured_mix(P,nmeas,ncont,alpha,channels,P.parameters(),self.options);
+            [self.K,self.info] = LPV_unstructured_mix_new(P,nmeas,ncont,alpha,channels,P.parameters(),self.options);
             self.solved = true;
             
             % Save solver output
@@ -143,6 +143,7 @@ classdef Solver_mixSynLPV < Solver
             cap.improper = false;
             cap.parametric = true;
             cap.fixedorder = false;
+            cap.polereg = false;
         end
     end
 end

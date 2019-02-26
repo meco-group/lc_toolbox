@@ -15,9 +15,9 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-clear all; clc; close all
+clear all; clc; %close all
 
-example_type = 'uvar_bounded';
+example_type = 'uvar_unbounded';
 
 %scheduling parameters
 switch example_type
@@ -39,7 +39,7 @@ switch example_type
         param = {k1,im2};
     case 'mvar_k1_bounded'
         k1    = SchedulingParameter('k1',[10,16],[-2,2]);
-        im2   = SchedulingParameter('im2',[0.25,1],0);
+        im2   = SchedulingParameter('im2',[0.25,1],inf);
         param = {k1,im2};  
     case 'mvar_im2_bounded'
         k1    = SchedulingParameter('k1',[10,16],0);
@@ -57,6 +57,6 @@ C = [1 0 0 0; 0 1 0 0; 0 0 0 0; 0 0 0 0; 1 0 0 0; 0 0 0 1];
 D = [zeros(4,2), [0 0; 0 0; 1 0; 0 1]; zeros(2,2), zeros(2,2)];
 nu = 2; ny = 2; 
 sys.A = A; sys.B = B; sys.C = C; sys.D = D; sys.Ts = 0;
-options = struct('var_deg',1,'var_knots',0,'controller_dependency','a','spec',inf,'objective','wc','verbose',2);
+options = struct('var_deg',1,'var_knots',0,'controller_dependency','ada','spec',inf,'objective','wc','verbose',2,'constantLyap','false');
 % set up and solve the LPV control problem
-[K,sol_info] = LPV_unstructured_OF(sys,ny,nu,param,options)
+[K,sol_info] = LPV_unstructured_OF_new(sys,ny,nu,param,options)

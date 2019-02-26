@@ -536,13 +536,29 @@ classdef(InferiorClasses = {?zpk,?ss,?tf}) Signal
             fprintf('Signal with UUIDs:\n');
             for k = 1:length(s)
                 fprintf('\t%s',num2str([s(k).UUID]));
-                if ~isempty(s(k).alias),
+                if ~isempty(s(k).alias)
                     fprintf(',[%s]\n',num2str([s(k).alias.UUID]));
                 else
                     fprintf('\n');
                 end
             end
         end
+        
+        function ids = listaliases(self)
+        % Returns a vector with all IDs of the aliases of a signal of
+        % length 1.
+        %
+        % Return values:
+        %  ids : vector with all IDs of this signal and its aliases @type double
+            assert(length(self)==1,'You can only list all aliases for a signal of length 1.'); 
+            a = self.alias;
+            ids = self.UUID;
+            for i=1:length(a)
+                ids = [ids listaliases(a(i))];
+            end
+            ids = unique(ids);
+        end
+        
         
         function [sys,conn] = system(self,name)
         % Creates a system realizing a linear combination.

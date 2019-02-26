@@ -111,6 +111,16 @@ classdef SystemOfModels < AbstractSystem
         end
         
         function submod = subsref_signal(self,in,out)
+            function str = signalsNotFound(sig)
+                sig = listaliases(sig);
+                if length(sig)>1
+                    l = sprintf('%i, ', sig(2:end)); l = l(1:end-2);
+                    str = [num2str(sig(1)) ' (also known as ' l ')']; 
+                else
+                    str = num2str(sig);
+                end
+            end
+            
             [mtcin,idxin] = ismember(in,self.in);
             [mtcout,idxout] = ismember(out,self.out);
             
@@ -126,8 +136,16 @@ classdef SystemOfModels < AbstractSystem
                         s = lcin(k);
                         lcin(k).multipliers = 1;
                         lcin(k).components = [];
-                        assert(all(size(s.components)>=1),'Some signals were not members of the plant. You might have to check your plant, as this usually occurs when accidentally closing a loop: your exogenous signals then become internal signals.');
-                        assert(all(ismember(s.components,self.in)),'Some signals in linear combination were not members of the plant');
+                        if ~all(size(s.components)>=1)
+                            error(['The following signal was not found in the system: ' signalsNotFound(s) '. You might have to check your plant, as this usually occurs when accidentally closing a loop: your exogenous signals then become internal signals.']);
+                        end
+                        if ~all(ismember(s.components,self.in))
+                            nip = s.components(~ismember(s.components,self.in)); 
+                            for i=1:length(nip)
+                                err{i} = signalsNotFound(nip(i));
+                            end
+                            error(['The following signal(s), that are part of a linear combination signal you requested, were not members of the plant: ' strjoin(err,', ') '.']);
+                        end
                         connin_ = arrayfun(@(m,c) eq(c,m*lcin(k)),s.multipliers(:),s.components(:),'un',0);
                         connin = vertcat(connin,connin_{:});
                     end
@@ -141,8 +159,16 @@ classdef SystemOfModels < AbstractSystem
                         s = lcout(k);
                         lcout(k).multipliers = 1;
                         lcout(k).components = [];
-                        assert(all(size(s.components)>=1),'Some signals were not members of the plant. You might have to check your plant, as this usually occurs when accidentally closing a loop: your exogenous signals then become internal signals.');
-                        assert(all(ismember(s.components,[self.out;self.in])),'Some signals in linear combination were not members of the plant');
+                        if ~all(size(s.components)>=1)
+                            error(['The following signal was not found in the system: ' signalsNotFound(s) '. You might have to check your plant, as this usually occurs when accidentally closing a loop: your exogenous signals then become internal signals.']);
+                        end
+                        if ~all(ismember(s.components,[self.out;self.in]))
+                            nip = s.components(~ismember(s.components,[self.out;self.in])); 
+                            for i=1:length(nip)
+                                err{i} = signalsNotFound(nip(i));
+                            end
+                            error(['The following signal(s), that are part of a linear combination signal you requested, were not members of the plant: ' strjoin(err,', ') '.']);
+                        end
                         connout_ = arrayfun(@(m,c) eq(m*c,lcout(k)),s.multipliers,s.components,'un',0);
                         connout = vertcat(connout,connout_{:});
                     end

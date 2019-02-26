@@ -136,6 +136,7 @@ classdef Solver_mixedHinfsyn < Solver
             cap.improper = false;
             cap.parametric = false;
             cap.fixedorder = false;
+            cap.polereg = false;
         end
     end
 end

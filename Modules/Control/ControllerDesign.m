@@ -25,6 +25,7 @@ classdef ControllerDesign < ControlProblem
         order = -1;         % Don't include order constraint to begin with
         
         solver = [];             % solver object
+        region = [];
         processor = SimpleProcessor();
     end
     

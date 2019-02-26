@@ -52,7 +52,7 @@ classdef Solver_mixedFixedOrder < Solver
             disp('Solving with mixedFixedOrder')
             
             %Default options
-            self.options.Dc = 0;
+            self.options.Dc = 1;
             self.options.Ts = 0;
             self.options.method = 'P';
             self.options.solver = 'mosek';
@@ -84,6 +84,7 @@ classdef Solver_mixedFixedOrder < Solver
             [P,~,~,ch] = Solver.plant(config,specs,vars);
             
             P = balreal(std(P)); 
+            %P = std(P);
             if isdt(P)
                 self.options.Ts = P.Ts;
                 self.options.method = 'G';
@@ -166,6 +167,7 @@ classdef Solver_mixedFixedOrder < Solver
             cap.improper = false;
             cap.parametric = false;
             cap.fixedorder = true;
+            cap.polereg = false;
         end
     end
 end

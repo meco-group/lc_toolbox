@@ -60,7 +60,7 @@ function [ K,sol_info ] = LPV_unstructured_mix( sys,ny,nu,alpha,channel,param,va
 default = struct('spec',inf,'objective','wc','var_deg',1,...
     'var_knots',0,'relax_deg',0,'relax_mp',0,'tolerance',1e-6,...
     'verbose',0,'scaling_obj',1,'solver','mosek',...
-    'controller_dependency','a','constantLyap','false');
+    'controller_dependency','a','constantLyap','false','Dc',0);
 
 if nargin == 7
     opts = mergestruct(varargin{1},default);
@@ -76,14 +76,14 @@ switch sys.Ts
                 switch opts.constantLyap
                     case 'false'
                         [K1,Primal1] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,1);
-                        [K2,Primal2] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,2);
-                        if ((Primal1.objective <= Primal2.objective) && ~isinf(Primal1.objective))
+                        %[K2,Primal2] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,2);
+%                        if ((Primal1.objective <= Primal2.objective) && ~isinf(Primal1.objective))
                             sol_info = Primal1; K = K1;
-                        elseif Primal1.objective > Primal2.objective
-                            sol_info = Primal2; K = K2;
-                        else
-                            error('Sorry, SDP : INFEASIBLE problem, cannot go further')
-                        end
+%                         elseif Primal1.objective > Primal2.objective
+%                             sol_info = Primal2; K = K2;
+%                         else
+%                            error('Sorry, SDP : INFEASIBLE problem, cannot go further')
+%                        end
                     case 'true'
                         [K,sol_info] = LPV_unstructured_mix_primal(sys,ny,nu,alpha,channel,param,opts,3);
                 end
@@ -123,7 +123,12 @@ import splines.*;
 
 t_start = cputime; 
 
-options = sdpsettings('solver',opts.solver,'verbose',opts.verbose,'mosek.MSK_DPAR_INTPNT_CO_TOL_REL_GAP',1e-6);
+def_options = sdpsettings('solver',opts.solver,'verbose',opts.verbose,'mosek.MSK_DPAR_INTPNT_CO_TOL_REL_GAP',1e-7);
+if isstruct(opts)
+    options = mergestruct(opts,def_options);
+else
+    options = def_options;
+end
 opti = OptiSplineYalmip();
 
 % generalized plant matrices
@@ -201,7 +206,12 @@ end
 Ac_hat = opti.Function(TB,[nx,nx],'full');
 Bc_hat = opti.Function(TB,[nx,ny],'full');
 Cc_hat = opti.Function(TB,[nu,nx],'full');
-Dc_hat = zeros(nu,ny);
+switch opts.Dc
+    case 0
+        Dc_hat = zeros(nu,ny);
+    case 1
+        Dc_hat = opti.Function(TB,[nu,ny],'full');
+end
 for j = 1:n_pspecs
     gam2{j} = opti.variable(1);
     if channel(j).performance == 2
@@ -252,13 +262,11 @@ Q = [X, eye(nx); eye(nx), Y];
                 Term{j} = blkdiag(Term1,-Term2,Term3);
 
                 % set Dc_hat = 0 to avoid constraint Dzw + Dzu*Dc_hat*Dyw == 0
-                % incorporate this later...
-                Dc_hat = zeros(nu,ny);                
+                % incorporate this later...              
             end
         end
                            % set Dc_hat = 0 to avoid constraint Dzw + Dzu*Dc_hat*Dyw == 0
                             % incorporate this later...
-                Dc_hat = zeros(nu,ny);
 % LMI relaxations
 
 % degree elevations

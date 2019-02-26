@@ -33,10 +33,12 @@ classdef SchedulingParameter < splines.Function
             parameter.bounded = 0;            
             switch nargin
                 case 3
-                    if ~all(rate==0)
-                        parameter.bounded = 1;
-                    else
+                    if all(abs(rate)==0)
                         parameter.bounded = 0;
+                    elseif all(abs(rate)==inf)
+                        parameter.bounded = 'unbounded';
+                    else
+                        parameter.bounded = 'bounded';
                     end
 
                     if length(rate) == 1
@@ -68,7 +70,7 @@ classdef SchedulingParameter < splines.Function
         
         function r = add_parameter_derivative(self,c_or_d)
             r = {};
-             assert(self.bounded==1,'cannot add, parameter is not bounded')
+             assert(all(strcmp(self.bounded,'bounded')),'cannot add, parameter is not bounded')
                     switch c_or_d
                         case 'c'
                             p = SchedulingParameter(strcat(self.tensor_basis.arguments,'dot'),self.rate,0);

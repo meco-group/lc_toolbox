@@ -65,9 +65,8 @@ classdef Solver_systune < Solver
                 warning('Systune rescales the input weights by the provided scaling factors.');
             end
             specs = specs.rescale('obj');
-            [P,wspecs] = Solver.plant(config,specs,vars);
-            ch = Solver.channels(wspecs);   
-
+            [P,~,~,ch] = Solver.plant(config,specs,vars);
+            
             % Split up the system in parts
             ncont = length(specs.ctrl_in);
             nmeas = length(specs.ctrl_out);
@@ -97,9 +96,9 @@ classdef Solver_systune < Solver
 
             % make controller block
             if specs.order == -1
-                K = ltiblock.ss('K',size(P.a,1),length(ny),length(nu));
+                K = ltiblock.ss('K',size(P.a,1),length(nu),length(ny));
             else
-                K = ltiblock.ss('K',specs.order,length(ny),length(nu));
+                K = ltiblock.ss('K',specs.order,length(nu),length(ny));
             end
             K.u = P.outputname(ny);
             K.y = P.inputname(nu);
@@ -147,6 +146,7 @@ classdef Solver_systune < Solver
             cap.improper = false;
             cap.parametric = false;
             cap.fixedorder = true;
+            cap.polereg = false;
         end
     end
 end

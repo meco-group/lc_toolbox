@@ -96,7 +96,7 @@ classdef Solver_HIFOO < Solver
             end
             
             % Controller order
-            if specs.order == -1; GPfull = Solver.plant(config,specs,vars); ORDER = GPfull.content(1).nx; else; ORDER = specs.order; end
+            if specs.order == -1; GPfull = Solver.plant(config,specs,vars); ORDER = GPfull.nx; else; ORDER = specs.order; end
             
             % Solve
             tic
@@ -139,6 +139,7 @@ classdef Solver_HIFOO < Solver
             cap.improper = false;
             cap.parametric = false;
             cap.fixedorder = true;
+            cap.polereg = false;
         end
     end
 end

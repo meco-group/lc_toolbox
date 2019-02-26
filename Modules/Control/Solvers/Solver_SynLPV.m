@@ -90,7 +90,7 @@ classdef Solver_SynLPV < Solver
             else
                 self.options.spec = Inf;
             end
-            [self.K,self.info] = LPV_unstructured_OF(P,nmeas,ncont,P.parameters(),self.options);
+            [self.K,self.info] = LPV_unstructured_OF_new(P,nmeas,ncont,P.parameters(),self.options);
             
             % Save solver output
             self.gamma = sqrt(self.info.objective);
@@ -120,6 +120,7 @@ classdef Solver_SynLPV < Solver
             cap.improper = false;
             cap.parametric = true;
             cap.fixedorder = false;
+            cap.polereg = false;
         end
     end
 end

@@ -73,6 +73,20 @@ switch c_or_d
             end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Lyapunov matrices for discrete time
+    case 'd'
+        switch dependency
+            case 'constant'
+                for i = 1:length(param)
+                            P_basis{i} = basis.bases{i};
+                            P_args{i}  = param{i}.tensor_basis.arguments;
+                end
+                     P = opti.Function(TensorBasis(P_basis,P_args),[n,n],'symmetric');
+                     dPdt = P;
+            case 'brv'
+                error('Not yet implemented');
+            otherwise
+                error('Wrong selection of dependecy');
+        end
 end
 end
 

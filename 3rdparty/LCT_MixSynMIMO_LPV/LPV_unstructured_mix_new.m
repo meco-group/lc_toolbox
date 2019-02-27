@@ -449,4 +449,50 @@ sol_info.comp_time_total   = cputime - t_start;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+function [K,sol_info] = LPV_unstructured_mix_primal_DT(sys,ny,nu,alpha,channel,param,opts,dep)
+check_optispline;
+import splines.*;
 
+t_start = cputime; 
+
+options = sdpsettings('solver',opts.solver,'verbose',opts.verbose,'mosek.MSK_DPAR_INTPNT_CO_TOL_REL_GAP',1e-6);
+opti = OptiSplineYalmip();
+
+% generalized plant matrices
+gen_sys = extract_generalized_plant(sys,nu,ny);
+
+%LPV matrices for each I/O channel
+n_pspecs = length(channel); %number of performance specs
+A = gen_sys.A; nx = gen_sys.nx; Bu = gen_sys.Bu; Cy = gen_sys.Cy; 
+[Bw,Cz,Dzw,Dzu,Dyw] = deal(cell(1,n_pspecs));
+[nw,nz] = deal(zeros(1,n_pspecs));
+for j = 1:n_pspecs
+    Bw{j}  = gen_sys.Bw(:,channel(j).In);
+    Cz{j}  = gen_sys.Cz(channel(j).Out,:);   
+    Dzw{j} = gen_sys.Dzw(channel(j).Out,channel(j).In); 
+    Dzu{j} = gen_sys.Dzu(channel(j).Out,:); 
+    Dyw{j} = gen_sys.Dyw(:,channel(j).In); 
+    nw(j)  = size(Bw{j},2);
+    nz(j)  = size(Cz{j},1);
+    if sys.Ts == 0 && opts.spec == 2
+    if isa(Dzw,'splines.Function')
+        data = Dzw.coeff.data;
+        if any(data(:)~=0)
+            disp('Continuous time, D-matrix closed-loop system nonzero => H2 performance infinite');
+            sol_info.feas      = 0;
+            sol_info.objective = [];
+            K = [];
+            return;
+        end
+    elseif any(Dzw(:)~=0)
+        disp('Continuous time, D-matrix closed-loop system nonzero => H2 performance infinite');
+        sol_info.feas      = 0;
+        sol_info.objective = []; 
+        K = [];
+        return;  
+    end
+    end
+end
+%% Optimization variables
+N = length(param);    
+end

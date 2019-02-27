@@ -296,6 +296,25 @@ classdef AbstractSystem < handle
 
         function varargout = bodemag(varargin)
             [varargin,labels] = stdargs(varargin,'freq');
+                for i = 1:length(varargin)
+                    if (numel(varargin{i}.SamplingGrid) == 1)
+                    s =  fieldnames(varargin{i}.SamplingGrid);
+                    param_grid{i} = varargin{i}.SamplingGrid.(s{1});
+                        for j = 1:size(varargin{i},3)
+                            h1 = subplot(1,1,1);
+                            [mag,~,w] = bode(varargin{i}(:,:,j,:));
+                            hold(h1,'on')
+                            h1.ColorOrderIndex = i;
+                            plot3(w(:),param_grid{i}(j)*ones(size(w,1),1),mag(:));
+                        end
+                    end
+                end
+                h1.View = [45,45];
+                h1.XLabel.String = 'Frequency';
+                h1.ZLabel.String = 'Magnitude(dB)';
+                h1.YLabel.String = 'Scheduling Parameter';
+                h1.XScale = 'log';   
+            figure;
             [varargout{1:nargout}] = bodemag(varargin{:});
             if nargout==0, legend(labels{:}), end
         end

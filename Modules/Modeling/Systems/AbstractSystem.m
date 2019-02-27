@@ -262,6 +262,34 @@ classdef AbstractSystem < handle
     methods (Access=public, Sealed=true)
         function varargout = bode(varargin)
             [varargin,labels] = stdargs(varargin,'freq');
+                for i = 1:length(varargin)
+                    if (numel(varargin{i}.SamplingGrid) == 1)
+                    s =  fieldnames(varargin{i}.SamplingGrid);
+                    param_grid{i} = varargin{i}.SamplingGrid.(s{1});
+                        for j = 1:size(varargin{i},3)
+                            [mag,phase,w] = bode(varargin{i}(:,:,j,:));
+                            h1 = subplot(2,1,1);
+                            hold(h1,'on')
+                            h1.ColorOrderIndex = i;
+                            plot3(w(:),param_grid{i}(j)*ones(size(w,1),1),mag(:));
+                            h2 = subplot(2,1,2);
+                            hold(h2,'on')
+                            h2.ColorOrderIndex = i;
+                            plot3(w(:),param_grid{i}(j)*ones(size(w,1),1),phase(:));
+                        end
+                    end
+                end
+                h1.View = [45,45];
+                h2.View = [45,45];
+                h1.XLabel.String = 'Frequency';
+                h2.XLabel.String = 'Frequency';
+                h1.ZLabel.String = 'Magnitude(dB)';
+                h2.ZLabel.String = 'Phase(deg)';
+                h1.YLabel.String = 'Scheduling Parameter';
+                h2.YLabel.String = 'Scheduling Parameter';
+                h1.XScale = 'log';
+                h2.XScale = 'log';   
+            figure;
             [varargout{1:nargout}] = bode(varargin{:});
             if nargout==0, legend(labels{:}), end
         end
@@ -328,7 +356,7 @@ classdef AbstractSystem < handle
             [varargout{1:nargout}] = pzmap(varargin{:});
             if nargout==0, legend(labels{:}), end
         end
-        
+
         function varargout = sim(self,u,varargin)
             models = content(model(self));
             N = length(models);

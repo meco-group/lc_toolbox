@@ -68,7 +68,7 @@ if all(sz1==sz2)
 
         if xor((rank(ss1.E,tol)~=size(ss1.E,1)),(rank(ss2.E,tol)~=size(ss2.E,1)))
             disp('1 of the systems is improper. Try to put it in a proper form using dss2ss and check again.')
-            error = 0;
+            error = false;
             equal = 0;
         else
             if((rank(ss1.E,tol)~=size(ss1.E,1))&&(rank(ss2.E,tol)~=size(ss2.E,1)))

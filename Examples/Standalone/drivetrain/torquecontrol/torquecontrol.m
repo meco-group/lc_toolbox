@@ -21,10 +21,10 @@ figure; bode(G{:}); hold on; bode(Gav,'k'); title('Measurements & average');
 % fit
 FRFW = squeeze(ones(size(Gav.ResponseData))); 
 FRFW(11:500) = 0;       % don't fit to 50 Hz
-FRFW(501:1000) = 1;     % fit AR/R pair
-FRFW(1001:2000) = 10;   % more weight to antiresonance
+FRFW(501:1000) = 10;     % fit AR/R pair
+FRFW(1001:2000) = 1000;   % more weight to antiresonance
 FRFW(2001:end) = 0;     % don't fit from 200 Hz
-settings = struct('denh',2,'denl',0,'numh',4,'numl',0,'FRFW',FRFW);
+settings = struct('denh',3,'denl',0,'numh',2,'numl',0,'FRFW',FRFW);
 Gfit = param_ident('data',Gav,'method','nllsfdi','settings',settings);
 figure; bode(Gav); hold on; bode(Gfit); title('Model'); 
 
@@ -60,12 +60,19 @@ WU = Weight.HF(100,1,-40);
 
 obj =  WS*S;
 cstr = [MS*S <= 1 ; WU*U <= 1];
-    
+
+WSu = Weight.LF(100,1); 
+WUip = Weight.HF(100,1);
+obj2 = WSu*S;
+cstr2 = [MS*S <= 1 ; WUip*U <= 1];
+opts.synthesis.relaxation = 1.001;
+
 % solve
 [~,~,info] = CL.solve(obj,cstr,K);
+[~,~,info2] = CL.solve(obj2,cstr2,K,opts);
 
 % plot
- showall(info); % plots the channels that were in the optimization problem
+ showall(info,info2); % plots the channels that were in the optimization problem
  figure; bode(CL(T)); title('Closed loop'); % plot the closed-loop
  figure; bode(K); title('Controller'); % plot the controller
 
@@ -77,9 +84,10 @@ K.add(fromstd(C));
 
 % check whether the closed-loop specs are still satisfied, also plot the
 % nonparametric loops
+s = tf('s'); 
 P.add(G{:});
-figure(); bodemag(CL(S)); hold on; bodemag(1/MS,'--'); bodemag(info.gamma(1)/WS,'--'); title('Sensitivity S');
-figure(); bodemag(CL(U)); hold on; bodemag(1/WU,'--'); title('Input sensitivity U'); 
+figure(); bodemag(CL(S)); hold on; bodemag(1/MS,'--'); bodemag(info.gamma(1)*s/(100*2*pi),'--'); title('Sensitivity S');
+figure(); bodemag(CL(U)); hold on; bodemag(2*pi*100/s,'--'); title('Input sensitivity U'); 
 figure(); bodemag(CL(T)); title('Closed loop T'); 
 
 % save controller

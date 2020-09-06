@@ -42,14 +42,11 @@ end
 sz1 = size(ss1);
 sz2 = size(ss2);
 
-if isa(ss1,'AbstractLFTmod'); ss1 = simplify(ss1); end
-if isa(ss2,'AbstractLFTmod'); ss2 = simplify(ss2); end
-
 if all(sz1==sz2)
     if isa(ss1,'Gridmod') && isa(ss2,'Gridmod')
         if all(ss1.gridsize() == ss2.gridsize())
             equal = true;
-            error = 0;
+            error = false;
             for k = 1:prod(ss1.gridsize())
                 equal = equal && sscomp(ss1.grid_{k},ss2.grid_{k});
             end
@@ -69,7 +66,7 @@ if all(sz1==sz2)
         if xor((rank(ss1.E,tol)~=size(ss1.E,1)),(rank(ss2.E,tol)~=size(ss2.E,1)))
             disp('1 of the systems is improper. Try to put it in a proper form using dss2ss and check again.')
             error = false;
-            equal = 0;
+            equal = false;
         else
             if((rank(ss1.E,tol)~=size(ss1.E,1))&&(rank(ss2.E,tol)~=size(ss2.E,1)))
                 X1 = ss1.E; B1 = ss1.B; C1 = ss1.C; Y1 = ss1.A;
@@ -92,4 +89,3 @@ else
     equal = false;
 end
 end
-

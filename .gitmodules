@@ -1,0 +1,3 @@
+[submodule "Modules/Identification/Resmile"]
+	path = Modules/Identification/Resmile
+	url = https://github.com/meco-group/resmile

@@ -76,6 +76,7 @@ classdef Solver_mixedHinfsyn < Solver
             % Compute plant state-space
             specs = specs.rescale('constr+bound');
             [P,~,~,ch] = Solver.plant(config,specs,vars);
+            P = fromstd(minreal(std(P))); 
             
             % Information to the solver
             alpha = zeros(length(specs.performance),1); % Setup which channels are objectives and which are constraints
@@ -96,7 +97,8 @@ classdef Solver_mixedHinfsyn < Solver
             
             % Compute the controller
             tic;
-            [K,H,gamma] = mixedHinfsyn(balreal(P),nmeas,ncont,Mz,alpha,self.options);
+            P = balreal(P); 
+            [K,H,gamma] = mixedHinfsyn(P,nmeas,ncont,Mz,alpha,self.options);
             self.info.time = toc;
             K = balreal(K); % improve conditioning of sys_K
             

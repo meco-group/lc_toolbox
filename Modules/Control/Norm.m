@@ -666,6 +666,7 @@ classdef Norm < Specification
         function [sys,connections,norms] = tofilter(norms,io)
             [~,ui,i] = Norm.unique(norms,io);
             
+
             switch(io)
                 case 'in'
                     signals = cellfun(@(x) x.ch_p.in,norms(ui),'un',0);

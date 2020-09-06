@@ -51,7 +51,7 @@ function meas  = importDSPACE(file, inputSignal, periodicity, varargin)
     labels = {expstruct.Y.Name};
     labels = ['time (s)' labels];
     cond1 = sum(sum(cellfun(@isempty, [strfind(labels,'enc1 (mm)') ; strfind(labels,'enc2 (mm)') ; strfind(labels,'input (V)')]),2)==length(labels),1)==0;
-    cond2 = sum(sum(cellfun(@isempty, [strfind(labels,'Input speed') ; strfind(labels,'Angle (deg)') ; strfind(labels,'Position (mm)')]),2)==length(labels),1)==0;
+    cond2 = sum(sum(cellfun(@isempty, [strfind(labels,'Input Speed') ; strfind(labels,'Angle (deg)') ; strfind(labels,'Position (mm)')]),2)==length(labels),1)==0;
     assert(cond1 || cond2, 'I could not detect data originating from the overhead crane or the linear slide. Did you change the default labels in dSPACE ControlDesk?');
     
     % retrieve the data

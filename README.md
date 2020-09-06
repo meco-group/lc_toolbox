@@ -14,6 +14,16 @@ Recommended external packages:
   3. [SDPT3](http://www.math.nus.edu.sg/~mattohkc/sdpt3.html): free LMI solver
 * [Optispline](https://github.com/meco-group/optispline): this spline toolbox enables LPV controller design.
 
+If you clone the repo, don't forget to initialize the submodules:
+
+    git clone https://github.com/meco-group/lc_toolbox
+    cd lc_toolbox
+    git submodule update --init --recursive
+
+How to add the repo to the MATLAB path:
+
+    addpath(genpath('lc_toolbox'))
+
 # User guide (a crash course)
 
 ## 1. Systems theory module
@@ -92,6 +102,12 @@ So we can use the parameter to make parameter dependent matrices and use them to
 ## 2. Identification module
 
 Coming soon! The identification module is currently being thoroughly revised and refactored to make it easier for non-experienced users. 
+
+### LPV identification
+
+The ReSMILE method (Regularized State-space Model Interpolation of Local Estimates) is available through the `Resmile` class, you can find more information [here](https://github.com/meco-group/resmile/blob/master/README.md).
+
+Example code and datasets available, see `Modules/Identification/Resmile/examples`, particularly `resmile_lctoolbox_example.m` for usage with LC Toolbox. 
 
 ## 3. Controller design module
 

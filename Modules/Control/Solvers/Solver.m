@@ -34,7 +34,7 @@ classdef Solver
     end
     
     properties (Access = private,Constant)
-        solverlist = {'Hinfsyn','mixedHinfsyn','mixedHinfsynMIMO','mixedHinfsynMIMO_unstab','mixedFixedOrder','systune','HIFOO','SynLPV','mixSynLPV','mixedpoleMIMO'};
+        solverlist = {'Hinfsyn','mixedHinfsyn','hinfcd','mixedHinfsynMIMO','mixedHinfsynMIMO_unstab','mixedFixedOrder','systune','HIFOO','SynLPV','mixSynLPV','mixedpoleMIMO'};
     end
     
     methods   
@@ -402,14 +402,15 @@ classdef Solver
                 cap = cellfun(@(x)setfield(eval(['Solver_' x '.capabilities()']),'name',x),Solver.solverlist);
 
                 % Check the solver selection criteria
-                [~,Woutus,Winus,ch] = Solver.plant(config,specs,vars);
+                [~,Wout,Win,ch] = Solver.plant(config,specs,vars,struct('separate_filters',true));
                 criteria.constraints = isCO(specs);
                 criteria.inout = ~isequal(ch.In{1},ch.In{:}) + ~isequal(ch.Out{1},ch.Out{:});
                 criteria.norm = norms(specs);
-                criteria.unstable = ~(isempty(Woutus.a) && isempty(Winus.a));
-                criteria.improper = false;
+                criteria.unstable = ~(isstable(Wout) && isstable(Win));
+                criteria.improper = ~(isempty(Wout.E) || rank(Wout.E)==length(Wout.E)) && ~(isempty(Win.E) || rank(Win.E)==length(Win.E));
                 criteria.parametric = isparametric(specs) | any(cellfun(@(x)isparametric(content(x,1)),cconf));
                 criteria.polereg = ~(isempty(specs.region));
+                
                 % Check which solvers can be applied for full order
                 remove = (~[cap.constraints]) & criteria.constraints;
                 remove = remove | ([cap.inout] < criteria.inout);
@@ -442,7 +443,7 @@ classdef Solver
             end
         end
         
-        function [GP,Woutus,Winus,ch] = plant(config,specs,vars)
+        function [GP,Wout,Win,ch] = plant(config,specs,vars,opts)
             % Constructs the generalized plant based on the control 
             % configuration the user specified and on the specifications.
             % 
@@ -476,43 +477,45 @@ classdef Solver
             GP = GP.content(1);
             
             % put filter splitting and multiplication here
-            try
-                [Wins,Winus] = stabsep(std(Win.content(1)));
-                if ~isempty(Winus.a) % unstable modes in input filter
-                    Winus = [Winus;ss(eye(size(Win,2)))];
-                    Wins = [ss(eye(size(Win,1))),Wins];
-                else
-                    Wins = std(Win.content(1));
-                    Winus = ss(eye(size(Wins,2)));
-                end
-            catch
-                warning('stabsep cannot separate modes for improper systems. The stable/unstable decomposition is omitted for now.');
-                Wins = std(Win.content(1));
-                Winus = ss(eye(size(Wins,2)));
-            end
-              
-            try
-                [Wouts,Woutus] = stabsep(std(Wout.content(1)));
-                if ~isempty(Woutus.a) % unstable modes in output filter
-                    Wouts = [ss(eye(size(Wout,2)));Wouts];
-                    Woutus = [Woutus,ss(eye(size(Wout,1)))];
-                else
-                    Wouts = std(Wout.content(1));
-                    Woutus = ss(eye(size(Wouts,1)));
-                end
-            catch
-                warning('stabsep cannot separate modes for improper systems. The stable/unstable decomposition is omitted for now.');
-                Wouts = std(Wout.content(1));
-                Woutus = ss(eye(size(Wouts,1)));
-            end
-            
-            % multiply the stable parts
-            Wouts_ = blkdiag(Wouts,ss(eye(length(specs.ctrl_out))));
-            Wins_ = blkdiag(Wins,ss(eye(length(specs.ctrl_in))));
-            GP = fromstd(Wouts_)*GP*fromstd(Wins_);
-%             if ~isparametric(GP)
-%                 GP = ssminreal(simplify(GP));
+%             try
+%                 [Wins,Winus] = stabsep(std(Win.content(1)));
+%                 if ~isempty(Winus.a) % unstable modes in input filter
+%                     Winus = [Winus;ss(eye(size(Win,2)))];
+%                     Wins = [ss(eye(size(Win,1))),Wins];
+%                 else
+%                     Wins = std(Win.content(1));
+%                     Winus = ss(eye(size(Wins,2)));
+%                 end
+%             catch
+%                 warning('stabsep cannot separate modes for improper systems. The stable/unstable decomposition is omitted for now.');
+%                 Wins = std(Win.content(1));
+%                 Winus = ss(eye(size(Wins,2)));
 %             end
+%               
+%             try
+%                 [Wouts,Woutus] = stabsep(std(Wout.content(1)));
+%                 if ~isempty(Woutus.a) % unstable modes in output filter
+%                     Wouts = [ss(eye(size(Wout,2)));Wouts];
+%                     Woutus = [Woutus,ss(eye(size(Wout,1)))];
+%                 else
+%                     Wouts = std(Wout.content(1));
+%                     Woutus = ss(eye(size(Wouts,1)));
+%                 end
+%             catch
+%                 warning('stabsep cannot separate modes for improper systems. The stable/unstable decomposition is omitted for now.');
+%                 Wouts = std(Wout.content(1));
+%                 Woutus = ss(eye(size(Wouts,1)));
+%             end
+            
+            % multiply 
+            if nargin<4 || ~isfield(opts,'separate_filters') || ~opts.separate_filters
+                Wout = fromstd(blkdiag(std(Wout.content(1)),ss(eye(length(specs.ctrl_out)))));
+                Win = fromstd(blkdiag(std(Win.content(1)),ss(eye(length(specs.ctrl_in)))));
+                GP = fromstd(Wout)*GP*fromstd(Win);
+            else
+                Wout = fromstd(std(Wout.content(1)));
+                Win = fromstd(std(Win.content(1)));
+            end
             
             % 4. Set removed content back
             restore(vertcat(r{:}));

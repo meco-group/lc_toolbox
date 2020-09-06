@@ -28,9 +28,12 @@ clc
 Gmod = ZPKmod([-2*pi*3*exp(j*pi/2.5),-2*pi*3*exp(-j*pi/2.5)],[0,-2*pi*5*exp(j*pi/2.5),-2*pi*5*exp(-j*pi/2.5)],10);
 
 MS = Weight.DC(5); % weightDC constructs a dc weight equivalent with a peak of 5db
-WS = Weight.LF(0.5,1,-60); % Construct a first order low frequency roll-off weight with a cross-over frequency of 0.5Hz
+WS = Weight.LF(0.01,2,-40); % Construct a first order low frequency roll-off weight with a cross-over frequency of 0.5Hz
 WT = zpk([-10*2*pi,-10*2*pi],[-1e3*2*pi;-1e3*2*pi],2.5e3); % robustness weight 
 WU = Weight.HF(50,1,-60); % Weight on the input sensitivity to enforce roll-off in the controller
+
+WSu = Weight.LF(0.01,2); % Unstable variant of WS
+WUi = Weight.HF(50,1); % Improper variant of WU
 
 %% 1.2. Design the optimal controller using the lti_toolbox
 % Let's also set some options to get the plots we want
@@ -50,17 +53,23 @@ S = Channel(e/r,'Sensitivity');
 U = Channel(u/r,'Input Sensitivity');
 T = Channel(y/r,'Complementary Sensitivity');
 
-objective1 = [];
-constraints1 = [MS*S <= 1, WS*S <= 1, WU*U <= 1, WT*T <= 1];
-options1 = struct('controller_name','roll-off\_controller');
-[P,C1,info1] = P.solve(objective1, constraints1, K, options1);
+% objective1 = [];
+% constraints1 = [MS*S <= 1, WS*S <= 2, WU*U <= 1, WT*T <= 1];
+% options1 = struct('controller_name','roll-off\_controller');
+% [P,C1,info1] = P.solve(objective1, constraints1, K, options1);
 
 objective2 = WS*S;
-constraints2 = [MS*S <= 1, WU*U <= 1, WT*T <= 1];
+constraints2 = [MS*S <= 1; WU*U <= 1];
 options2 = struct('controller_name','optimal\_controller');
 [P,C2,info2] = P.solve(objective2, constraints2, K, options2);
 
-figure, bodemag(info1, info2);
+objective3 = WSu*S;
+constraints3 = [MS*S <= 1; WUi*U <= 1];
+options3 = struct('controller_name','optimal\_controller');
+[P,C3,info3] = P.solve(objective3, constraints3, K, options3);
+
+% figure, showall(info1, info2, info3);
+figure, showall(info2,info3)
 
 %% 1.3. Discussion
 % I think it is quite clear that the performance has increased! Some things

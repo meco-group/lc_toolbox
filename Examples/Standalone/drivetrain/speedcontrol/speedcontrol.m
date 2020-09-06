@@ -89,5 +89,5 @@ figure(); bodemag(CL(U)); hold on; bodemag(1/WU,'--'); title('Input sensitivity 
 figure(); bodemag(CL(T)); title('Closed loop T'); 
 
 % save controller
-K = std(Kc); 
-save controller K; 
+% K = std(Kc); 
+% save controller K; 

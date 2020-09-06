@@ -227,7 +227,7 @@ classdef TDMeasurementData < MeasurementData
                 case 'full'
                     if nop<=1 ; warning('Noise cannot be distinguished if you use only one period.'); end
                     f = fs/N * (0 : N-1)';
-                    F = fft(self.data_(end-N+1:end,indices));
+                    F = fft(self.data_(end-N+1:end,indices))/self.nop;
                     F = F(f<=fs/2,:); f = f(f<=fs/2);
                     i_tot = (1:length(f))';
                     i_per = (1:self.nop:length(f))';
@@ -278,18 +278,18 @@ classdef TDMeasurementData < MeasurementData
 					[F, f, indices] = self.spectrum(num2cell(indices), mode);
 					F(db(F)<-180) = NaN;  % dirty trick to prevent -Inf
 					figure
-                  semilogx(f(indices.excitation), db(F(indices.excitation,:)), 'x')
-                  ylabel('|data| [dB]'), xlabel('f  [Hz]'), title(['Measured data in ''' self.label_ '''']);
-                  if isempty(indices.nonlinearity) && ~isempty(indices.noise) 
-                        legends = [legends cellfun(@(x) ['noise ' x], legends, 'un', 0)];
+                  if ~isempty(indices.nonlinearity) && ~isempty(indices.noise)
+                        legends = [cellfun(@(x) ['noise ' x], legends, 'un', 0) cellfun(@(x) ['nonlinearity ' x], legends, 'un', 0) legends];
                   elseif ~isempty(indices.nonlinearity) && isempty(indices.noise)
-                        legends = [legends cellfun(@(x) ['nonlinearity ' x], legends, 'un', 0)];
-                  elseif ~isempty(indices.nonlinearity) && ~isempty(indices.noise)
-                        legends = [legends cellfun(@(x) ['nonlinearity ' x], legends, 'un', 0) cellfun(@(x) ['noise ' x], legends, 'un', 0)];
+                        legends = [cellfun(@(x) ['nonlinearity ' x], legends, 'un', 0) legends];
+                  elseif isempty(indices.nonlinearity) && ~isempty(indices.noise) 
+                        legends = [cellfun(@(x) ['noise ' x], legends, 'un', 0) legends];
                   end
-					hold on, try set(gca, 'ColorOrderIndex', 1); end
-                  semilogx(f(indices.nonlinearity), db(F(indices.nonlinearity,:)), 'o'), try set(gca, 'ColorOrderIndex', 1); end
-                  semilogx(f(indices.noise), db(F(indices.noise,:)), '.'), hold off, axis tight
+				  try set(gca, 'ColorOrderIndex', 1); end
+                  semilogx(f(indices.noise), db(F(indices.noise,:)), 'g.'), hold on, axis tight
+                  semilogx(f(indices.nonlinearity), db(F(indices.nonlinearity,:)), 'ro'), try set(gca, 'ColorOrderIndex', 1); end
+                  semilogx(f(indices.excitation), db(F(indices.excitation,:)), 'bx')
+                  ylabel('|data| [dB]'), xlabel('f  [Hz]'), title(['Measured data in ''' self.label_ '''']);
                   legend(legends);
 
 				case 'periodic' % only spectrum at excitation_ frequencies, possibly with spectra of all periods

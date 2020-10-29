@@ -163,21 +163,23 @@ classdef TDMeasurementData < MeasurementData
             
             mode = 'full';
             indices = (1:size(self.data_,2))';
-            if iscell(varargin{1}) && isnumeric(cell2mat(varargin{1}))
-                indices = cell2mat(varargin{1});
-                assert(all(indices <= size(self.datalabels_,2)),'At least one of your column numbers was out of range.');
-            elseif ischar(varargin{1})
-                mode = varargin{1};
-                if nargin >= 3 && iscell(varargin{2})
-                    if isnumeric(cell2mat(varargin{2}))    
-                        indices = cell2mat(varargin{2});
-                    else
-                        indices = getIndex(self,varargin{2}{:});
-                    end
+            if ~isempty(varargin)
+                if iscell(varargin{1}) && isnumeric(cell2mat(varargin{1}))
+                    indices = cell2mat(varargin{1});
                     assert(all(indices <= size(self.datalabels_,2)),'At least one of your column numbers was out of range.');
+                elseif ischar(varargin{1})
+                    mode = varargin{1};
+                    if nargin >= 3 && iscell(varargin{2})
+                        if isnumeric(cell2mat(varargin{2}))    
+                            indices = cell2mat(varargin{2});
+                        else
+                            indices = getIndex(self,varargin{2}{:});
+                        end
+                        assert(all(indices <= size(self.datalabels_,2)),'At least one of your column numbers was out of range.');
+                    end
+                else
+                    indices = self.getIndex(varargin{1}{:});
                 end
-            else
-                indices = self.getIndex(varargin{1}{:});
             end
             
             if isempty(self.datalabels_)
@@ -368,8 +370,12 @@ classdef TDMeasurementData < MeasurementData
         
         function self = detrend(self, labels)
             
-        	assert(sum(ismember(self.datalabels_,labels))==length(labels),['At least one of the labels your provided was not a valid data label. Valid labels are: ' strjoin(self.datalabels_)]);
-            indices = find(ismember(self.datalabels_,labels));
+            if nargin == 1
+                indices = (1:size(self.data_,2))'; %if labels not provided, we detrend all channels
+            else
+                assert(sum(ismember(self.datalabels_,labels))==length(labels),['At least one of the labels your provided was not a valid data label. Valid labels are: ' strjoin(self.datalabels_)]);
+                indices = find(ismember(self.datalabels_,labels));
+            end
             self.data_(:,indices) = detrend(self.data_(:,indices));     
             
         end

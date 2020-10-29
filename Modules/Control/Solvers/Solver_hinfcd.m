@@ -89,6 +89,7 @@ classdef Solver_hinfcd < Solver
             cap.improper = true;
             cap.parametric = false;
             cap.fixedorder = false;
+            cap.polereg = false; 
         end
     end
 end

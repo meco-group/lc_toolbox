@@ -22,7 +22,7 @@ function blk = blkdiag_model(self,other)
 
 if isempty(self)
     blk = other;
-elseif isempty(other)
+elseif nargin<2 || isempty(other)
     blk = self;
 else
     if isnumeric(self), self = SSmod(self); end

@@ -74,6 +74,10 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) FRDmod < Model & frd
             varargout = {size@frd(self,varargin{:})};
         end
         
+        function varargout = isempty(self,varargin)       
+            varargout = {isempty@frd(self,varargin{:})};
+        end
+        
         function sum = plus(self,other)
             sum = plus@Model(self,other);
         end

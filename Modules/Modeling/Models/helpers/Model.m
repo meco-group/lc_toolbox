@@ -59,6 +59,10 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
                 error('Unknown combination of input and output arguments.');
             end
         end
+        
+        function e = isempty(self)
+            e = any(size(self)==0);
+        end
 
         function varargout = subsref(self,s)
             % SUBSREF reimplement subsref for systems subindexing            

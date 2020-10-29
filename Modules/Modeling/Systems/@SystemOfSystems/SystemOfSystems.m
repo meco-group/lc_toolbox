@@ -213,6 +213,7 @@ classdef SystemOfSystems < AbstractSystem
                  catch
                      warning('Some models cannot be combined');
                      blk = [];
+                     name = [];
                      remove = true;
                  end
             end
@@ -227,7 +228,7 @@ classdef SystemOfSystems < AbstractSystem
             
             % 6. add input signals to output
             content__ = cellfun(@(x)lft(x,repmat(eye(length(in_)),[2,1]),length(in_),0),content__,'un',0);
-            content__ = cellfun(@(x,n)setName(x,n),content__,name,'un',0);
+            content__ = cellfun(@(x,n)setName(x,n),content__,name(~cellfun(@isempty,name)),'un',0);
             
             out_ = [out_;in_];
             LFT = IOSystem(in_,out_);

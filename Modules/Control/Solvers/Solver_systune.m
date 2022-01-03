@@ -37,13 +37,16 @@ classdef Solver_systune < Solver
     % See \c systune (MATLAB's Robust Control Toolbox) for the syntax and for more details.
         
     methods
-        function self = Solver_systune(~)
+        function self = Solver_systune(options)
         % Constructor for Solver_systune objects.
         % 
         % Return values:
         %  self: the solver interface @type Solver_systune
         
-            % Do nothing for now - options are ignored.
+            self.options.systuneOptions = systuneOptions;
+            if nargin > 0
+                self = setoptions(self,options);
+            end
         end
         
         function self = solve(self,config,specs,vars)
@@ -105,7 +108,7 @@ classdef Solver_systune < Solver
 
             % Try solving for a controller
             P = connect(P,K,P.inputname(nw),P.outputname(nz));
-            [CL,fSoft,gHard,info] = systune(P,objectives,constraints);
+            [CL,fSoft,gHard,info] = systune(P,objectives,constraints,self.options.systuneOptions);
             gammaormu = [fSoft,gHard];
             
             % rescale performance

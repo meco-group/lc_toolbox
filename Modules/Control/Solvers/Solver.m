@@ -123,7 +123,7 @@ classdef Solver
                               % the weights
                               for j=1:length(specs)
                                   if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
-                                     bodeplot(inv(specs{j}.W_in*specs{j}.W_out),[col '--']); 
+                                     bodeplot(fromstd(inv(specs{j}.W_in*specs{j}.W_out)),[col '--']); 
                                      a = gca;
                                      a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
                                   end
@@ -134,7 +134,7 @@ classdef Solver
                               c = 0;
                               for j=1:length(specs)
                                   if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
-                                     sigma(specs{j}.W_out*thissol.H(thischan).content(1)*specs{j}.W_in,col); hold on;
+                                     sigma(fromstd(specs{j}.W_out*thissol.H(thischan).content(1)*specs{j}.W_in,col)); hold on;
                                      if c>=1
                                         a = gca;
                                         a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % avoid same controller multiple times in legend

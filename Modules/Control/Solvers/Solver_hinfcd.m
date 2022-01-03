@@ -47,8 +47,8 @@ classdef Solver_hinfcd < Solver
             
             CH = struct('in',[],'out',[],'weight',[]);
             for i=1:length(ch.Hinf)
-                CH(i).in = find(ch.In{i});
-                CH(i).out = find(ch.Out{i}); 
+                [CH(i).in,~] = find(ch.In{i});
+                [~,CH(i).out] = find(ch.Out{i}); 
                 if i<=specs.nobj
                     CH(i).weight = scale(specs.performance{i}); 
                 else

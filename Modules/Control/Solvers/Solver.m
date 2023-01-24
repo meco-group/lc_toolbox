@@ -34,7 +34,7 @@ classdef Solver
     end
     
     properties (Access = private,Constant)
-        solverlist = {'Hinfsyn','mixedHinfsyn','hinfcd','mixedHinfsynMIMO','mixedHinfsynMIMO_unstab','mixedFixedOrder','systune','HIFOO','SynLPV','mixSynLPV','mixedpoleMIMO'};
+        solverlist = {'Hinfsyn','mixedHinfsyn','sshinfcd','hinfcd','mixedHinfsynMIMO','mixedHinfsynMIMO_unstab','mixedFixedOrder','systune','HIFOO','SynLPV','mixSynLPV','mixedpoleMIMO'};
     end
     
     methods   

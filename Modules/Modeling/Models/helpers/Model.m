@@ -63,25 +63,6 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
         function e = isempty(self)
             e = any(size(self)==0);
         end
-
-        function varargout = subsref(self,s)
-            % SUBSREF reimplement subsref for systems subindexing            
-            if strcmp(s(1).type,'()')
-                siz = size(self);
-                assert(~(isa(s(1).subs{1},'Signal') || isa(s(1).subs{2},'Signal')),'Cannot index a model using signals. Signals refer only to systems');
-                if s(1).subs{1}==':';s(1).subs{1}=1:siz(1);end
-                if s(1).subs{2}==':';s(1).subs{2}=1:siz(2);end
-                assert(all(cellfun(@isnumeric,s(1).subs)),'only numeric index');
-                assert(all(s(1).subs{1}<=siz(1)) && all(s(1).subs{2}<=siz(2)),'Index exceeds system dimensions.');
-                varargout = {submodel(self,s(1).subs{1},s(1).subs{2})};
-                
-                if length(s)>1
-                    varargout = {builtin('subsref',varargout{1},s(2:end))};
-                end
-            else
-                varargout = {builtin('subsref',self,s(:))};
-            end
-        end
         
         function sum = plus(self,other)
             assert(isa(self,'Model') || isa(self,'numlti') || isnumeric(self),'Both terms should be models.');

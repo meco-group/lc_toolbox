@@ -49,7 +49,7 @@ switch example_type
         error('Wrong selection of example_type . . .');
 end
 
-% system [Interpolation-Based Modeling of MIMO LPV Systems, J. De Caigny, J. F. Camino, and J. Swevers, IEEE TCST 2011]
+% system [Interpolation-Based AnalyticModeling of MIMO LPV Systems, J. De Caigny, J. F. Camino, and J. Swevers, IEEE TCST 2011]
 m1 = 10; k2 = 5; c1 = 0.2; c2 = 0.3; 
 A = [0 0 1 0; 0 0 0 1; -k1*(1/m1), k1*(1/m1), -(c1+c2)/m1, c2/m1; k1*im2, -(k1+k2)*im2, c2*im2, -c2*im2];
 B = [1 0 0 0; 0 1 0 0; 0 0 1/m1 0; 0 0 0 im2]; 

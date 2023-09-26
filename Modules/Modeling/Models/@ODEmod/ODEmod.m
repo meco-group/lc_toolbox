@@ -14,7 +14,7 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
+classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < AnalyticModel & AbstractLPVmod
     %ODEMOD Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -59,7 +59,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 E_ = @(x,u,p) varargin{1}.e;
                 p_ = varargin{1}.parameters();
                 name_ = varargin{1}.name;
-                siz = [varargin{1}.nout(),varargin{1}.nin(),varargin{1}.nx];
+                siz = [nout(varargin{1}),nin(varargin{1}),varargin{1}.nx];
                 x0_ = varargin{1}.x0;
                 Ts_ = varargin{1}.Ts;
             elseif isa(varargin{1},'LTILFTmod')
@@ -69,7 +69,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 E_ = @(x,u,p) varargin{1}.e;
                 p_ = varargin{1}.parameters();
                 name_ = varargin{1}.name;
-                siz = [varargin{1}.nout(),varargin{1}.nin(),varargin{1}.nx];
+                siz = [nout(varargin{1}),nin(varargin{1}),varargin{1}.nx];
                 x0_ = varargin{1}.x0;
                 Ts_ = varargin{1}.Ts;
             elseif isa(varargin{1},'LPVDSSmod')
@@ -79,7 +79,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 E_ = @(x,u,p) safeeval(varargin{1}.e,p,p_);
                 p_ = varargin{1}.parameters();
                 name_ = varargin{1}.name;
-                siz = [varargin{1}.nout(),varargin{1}.nin(),varargin{1}.nx];
+                siz = [nout(varargin{1}),nin(varargin{1}),varargin{1}.nx];
                 x0_ = varargin{1}.x0;
                 Ts_ = varargin{1}.Ts;
             elseif isa(varargin{1},'LPVLFTmod')
@@ -90,7 +90,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 E_ = @(x,u,p) e(S_(p));
                 p_ = varargin{1}.parameters();
                 name_ = varargin{1}.name;
-                siz = [varargin{1}.nout(),varargin{1}.nin(),varargin{1}.nx];
+                siz = [nout(varargin{1}),nin(varargin{1}),varargin{1}.nx];
                 x0_ = varargin{1}.x0;
                 Ts_ = varargin{1}.Ts;
             elseif isa(varargin{1},'ODEmod')
@@ -99,7 +99,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 E_ = varargin{1}.E;
                 p_ = varargin{1}.parameters();
                 name_ = varargin{1}.name;
-                siz = [varargin{1}.nout(),varargin{1}.nin(),varargin{1}.nx];
+                siz = [nout(varargin{1}),nin(varargin{1}),varargin{1}.nx];
                 x0_ = varargin{1}.x0;
                 Ts_ = varargin{1}.Ts;
             else
@@ -186,13 +186,13 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 E_ = cell(size(varargin));
                 for k = 1:nargin
                     s = varargin{k};
-                    f_{k} = @(x,u,p) s.f(x(ix+(1:s.nx)),u(iu+(1:s.nin())),p(sp{k}));
-                    g_{k} = @(x,u,p) s.g(x(ix+(1:s.nx)),u(iu+(1:s.nin())),p(sp{k}));
-                    g_conn_{k} = @(x,u,p) s.g_conn(x(ix+(1:s.nx)),u(iu+(1:s.nin())),p(sp{k}));
-                    E_{k} = @(x,u,p) s.E(x(ix+(1:s.nx)),u(iu+(1:s.nin())),p(sp{k}));
+                    f_{k} = @(x,u,p) s.f(x(ix+(1:s.nx)),u(iu+(1:nin(s))),p(sp{k}));
+                    g_{k} = @(x,u,p) s.g(x(ix+(1:s.nx)),u(iu+(1:nin(s))),p(sp{k}));
+                    g_conn_{k} = @(x,u,p) s.g_conn(x(ix+(1:s.nx)),u(iu+(1:nin(s))),p(sp{k}));
+                    E_{k} = @(x,u,p) s.E(x(ix+(1:s.nx)),u(iu+(1:nin(s))),p(sp{k}));
                     ix = ix + s.nx;
-                    iu = iu + s.nin();
-                    iy = iy + s.nout();
+                    iu = iu + nin(s);
+                    iy = iy + nout(s);
                 end
                 
                 f_ = @(x,u,p) cell2mat(cellfun(@(c)c(x,u,p),f_','un',0));
@@ -258,7 +258,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
                 g_conn_ = @(x,uf,p) vertcat(blk.g_conn(x(1:blk.nx), Duf*uf+Duc*Suc*x, p), ...
                                             Syc*blk.g(x(1:blk.nx), Duf*uf+Duc*Suc*x, p));
                 E_ = @(x,u,p) blkdiag(blk.E(x(1:blk.nx),Duc*x(blk.nx+(1:(nu+ny)))+Duf*u,p),zeros(nu+ny,nu+ny));
-                siz = [blk.nout-ny-nu,blk.nin-ny-nu,blk.nx+ny+nu];
+                siz = [nout(blk)-ny-nu,nin(blk)-ny-nu,blk.nx+ny+nu];
                 
                 % Add 'internal' states arising from the connections 
                 x0_ = [blk.x0 ; NaN*ones(ny+nu,1)]; % NaN will be replaced by the appropriate numerical value at simulation time
@@ -290,7 +290,7 @@ classdef (InferiorClasses = {?ss,?tf,?zpk}) ODEmod < Model & AbstractLPVmod
             assert(length(p) == 1,'only one parameter for now');
             f_ = @(x,u) self.f(x,u,p);
             g_ = @(x,u) self.g(x,u,p);
-            siz = [self.nout,self.nin,self.nx_];
+            siz = [nout(self),nin(self),self.nx_];
             if ~isempty(self.E)
                 E_ = @(x,u) self.E(x,u,p);
                 self = ODEmod(f_,g_,E_,siz);

@@ -108,9 +108,9 @@ classdef(InferiorClasses = {?DysSys,?zpk,?ss,?tf}) Channel
         % objects. The product of two channels has no meaning.
         %
         % Parameters: 
-        %  tf1 : either a channel, a model (\c numlti or Model) or a
+        %  tf1 : either a channel, a model (\c numlti or AnalyticModel) or a
         %  scalar (\c double) 
-        %  tf2 : either a channel, a model (\c numlti or Model) or a
+        %  tf2 : either a channel, a model (\c numlti or AnalyticModel) or a
         %  scalar (\c double) 
         %
         % Return values:

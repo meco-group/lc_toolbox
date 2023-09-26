@@ -19,7 +19,7 @@ function [ errorFRF ] = getFRFerror_LCT(freqLines, OmegaConc, FRFmConc, pGridIde
 FRFerror = zeros(numel(FRFmConc),1);
 for k = 1:numel(pGridIdent)
     mdlEval = model.evalme(pGridIdent(k),{schParam}); 
-    FRFerror(((freqLines(k)-1)*mdlEval.nout*mdlEval.nin+1):((freqLines(k+1)-1)*mdlEval.nout*mdlEval.nin),1) = vec(freqresp(mdlEval,OmegaConc((freqLines(k):(freqLines(k+1)-1)),1))) - FRFmConc(((freqLines(k)-1)*mdlEval.nout*mdlEval.nin+1):((freqLines(k+1)-1)*mdlEval.nout*mdlEval.nin),1); 
+    FRFerror(((freqLines(k)-1)*nout(mdlEval)*nin(mdlEval)+1):((freqLines(k+1)-1)*nout(mdlEval)*nin(mdlEval)),1) = vec(freqresp(mdlEval,OmegaConc((freqLines(k):(freqLines(k+1)-1)),1))) - FRFmConc(((freqLines(k)-1)*nout(mdlEval)*nin(mdlEval)+1):((freqLines(k+1)-1)*bout(mdlEval)*nin(mdlEval)),1); 
 end
 errorFRF = [real(FRFerror); imag(FRFerror)];
 

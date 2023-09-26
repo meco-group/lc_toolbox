@@ -21,7 +21,7 @@ classdef Solver
     % appropriate format for the solver they interface.
     
     properties
-        K;                  % the controller @type Model
+        K;                  % the controller @type AnalyticModel
         H;                  % closed loop system with the obtained controller K @type SystemOfModels
         performance;        % set of all objectives and constraints of type Specification @type cell
         

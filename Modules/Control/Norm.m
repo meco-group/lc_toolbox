@@ -34,11 +34,11 @@ classdef Norm < Specification
         % 
         % Parameters:
         %   varargin : should have on of these four structures:
-        %   -# an output weight (\c numlti or Model), followed by the performance
-        %      channel (\c Channel) , and the input weight (\c numlti or Model) as last argument 
-        %   -# an output weight (\c numtli or Model), followed by the
+        %   -# an output weight (\c numlti or AnalyticModel), followed by the performance
+        %      channel (\c Channel) , and the input weight (\c numlti or AnalyticModel) as last argument 
+        %   -# an output weight (\c numtli or AnalyticModel), followed by the
         %      performance channel (\c Channel)
-        %   -# the performance channel (\c Channel), followed by an input weight (\c numlti or Model)
+        %   -# the performance channel (\c Channel), followed by an input weight (\c numlti or AnalyticModel)
         %   -# a performance channel (\c Channel) (no weighting)
         %
         % Return values:
@@ -210,8 +210,8 @@ classdef Norm < Specification
         % Overloads MATLAB's \c * for Norm objects. 
         %
         % Parameters:
-        %   a : either a Norm, a weight (\c numlti or Model), or a scalar 
-        %   b : either a Norm, a weight (\c numlti or Model), or a scalar 
+        %   a : either a Norm, a weight (\c numlti or AnalyticModel), or a scalar 
+        %   b : either a Norm, a weight (\c numlti or AnalyticModel), or a scalar 
         %
         % Return values:
         %  n : the scaled or weighted norm @type Norm
@@ -249,8 +249,8 @@ classdef Norm < Specification
         % Overloads MATLAB's \c .* for Norm objects. 
         %
         % Parameters:
-        %   a : either a Norm, a weight (\c numlti or Model), or a scalar 
-        %   b : either a Norm, a weight (\c numlti or Model), or a scalar 
+        %   a : either a Norm, a weight (\c numlti or AnalyticModel), or a scalar 
+        %   b : either a Norm, a weight (\c numlti or AnalyticModel), or a scalar 
         %
         % Return values:
         %  n : the scaled or weighted norm @type Norm
@@ -430,7 +430,7 @@ classdef Norm < Specification
         %
         % Parameters:
         %   self: the norm @type Norm
-        %   W_out: the output weight of the norm @type Model
+        %   W_out: the output weight of the norm @type AnalyticModel
         %
         % Return values:
         %  self : the resulting norm @type Norm
@@ -442,7 +442,7 @@ classdef Norm < Specification
         %
         % Parameters:
         %   self: the norm @type Norm
-        %   W_in: the input weight of the norm @type Model
+        %   W_in: the input weight of the norm @type AnalyticModel
         %
         % Return values:
         %  self : the resulting norm @type Norm

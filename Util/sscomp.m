@@ -32,10 +32,10 @@ else
     tol = 1e-6;
 end
 
-if ~isa(ss1,'AnalyticModel')
+if ~isa(ss1,'Model')
     ss1 = fromstd(ss1);
 end
-if ~isa(ss2,'AnalyticModel')
+if ~isa(ss2,'Model')
     ss2 = fromstd(ss2);
 end
 

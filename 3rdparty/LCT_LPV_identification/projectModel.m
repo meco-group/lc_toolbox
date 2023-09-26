@@ -1,4 +1,4 @@
-function [ regMdlProj ] = projectAnalyticModel( varargin )
+function [ regMdlProj ] = projectModel( varargin )
 
 required = {'model','schParam','slackVars','threshold'};
 optional = {};

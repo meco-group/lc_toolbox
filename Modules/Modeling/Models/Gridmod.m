@@ -14,7 +14,7 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod}) Gridmod < AnalyticModel
+classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod}) Gridmod < Model
 % Create a grid of models. 
     
     properties
@@ -49,7 +49,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
                 % intended for? It repeats a model?
                 % Answer: necessary to connect grid models to standard lti
                 % models
-                if isa(grid,'AnalyticModel') && ~isa(grid,'Gridmod')
+                if isa(grid,'Model') && ~isa(grid,'Gridmod')
                     dims = cellfun(@length,params(:,2));
                     if length(dims) == 1, dims = [dims,1]; end
                     grid = repmat({grid},dims(:)');
@@ -143,8 +143,8 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
         % Two Gridmod objects cannot be combined. 
         % 
         % Parameters:
-        %  self : any AnalyticModel object @type AnalyticModel
-        %  other : any AnalyticModel object @type AnalyticModel
+        %  self : any Model object @type Model
+        %  other : any Model object @type Model
         %  nu : first \c nu outputs of \c other are connected to last \c nu
         %  inputs of \c self @type double
         %  ny : last \c ny outputs of \c self are connected to first \c ny
@@ -171,7 +171,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
         % Multiple Gridmod objects cannot be combined, unless their parameters and grids are equal. 
         % 
         % Parameters:
-        %  varargin: list of AnalyticModel objects, one of them being a Gridmod
+        %  varargin: list of Model objects, one of them being a Gridmod
         %  object. 
         %
         % Return values:

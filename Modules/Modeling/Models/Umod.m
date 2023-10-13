@@ -14,12 +14,12 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod}) Umod < Model
+classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod}) Umod < AnalyticModel
     %UMOD Uncertain model class
     %   Uncertain model. Some of the underlying model's channels are
     %   uncertain (the dimensions correspond to delta_).
     %   Input arguments:
-    %   Model,(type,W1,W2)
+    %   AnalyticModel,(type,W1,W2)
     
     properties
         M_               % plant with additional uncertainty channel(s) (ss)
@@ -32,7 +32,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
                 [M, delta] = lftdata(varargin{1});
                 self.M_ = fromstd(M);
                 self.delta_ = delta;
-            elseif isa(varargin{1},'Model')
+            elseif isa(varargin{1},'AnalyticModel')
                 if isa(varargin{1},'Umod')
                     error('Umod of Umod not implemented for now');                    
                 else
@@ -72,7 +72,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
 
                             end
                         otherwise
-                            error('The syntax for Umod is: Umod(uss) or Umod(Model, type, W1, W2).');
+                            error('The syntax for Umod is: Umod(uss) or Umod(AnalyticModel, type, W1, W2).');
                     end
                 end
             end
@@ -144,7 +144,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
         
         function wcsigma(self,varargin)
             assert(exist('wcsigma','builtin'),'wcsigma is only supported in MATLAB R2016b or higher.');
-            wcsigma(self.std,varargin{:});
+            wcsigma(std(self),varargin{:});
         end
         
         function blk = blkdiag(varargin)
@@ -189,7 +189,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
             
             % get frequency response for each I/O channel
             
-                model = self.std;
+                model = std(self);
                 
                 if nargin==2 
                     wout = varargin{1};

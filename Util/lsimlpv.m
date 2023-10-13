@@ -109,7 +109,7 @@ end
 
 % initialize
 X = zeros(model.nx(),length(t));
-Y = zeros(model.nout(),length(t));
+Y = zeros(nout(model),length(t));
 
 % time step
 h = diff(t(1:2));

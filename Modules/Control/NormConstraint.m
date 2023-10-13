@@ -82,7 +82,7 @@ classdef NormConstraint < Specification
         % Returns the input weight of the constrained norm. 
         %
         % Return values: 
-        %  W_out : the output weight @type Model
+        %  W_out : the output weight @type AnalyticModel
             W_out = self.norm.W_out;
         end
                 
@@ -90,7 +90,7 @@ classdef NormConstraint < Specification
         % Returns the input weight of the constrained norm.
         %
         % Parameters: 
-        %  W_in : the input weight @type Model
+        %  W_in : the input weight @type AnalyticModel
             W_in = self.norm.W_in; 
         end
         
@@ -123,7 +123,7 @@ classdef NormConstraint < Specification
         %
         % Parameters:
         %   self: the constrained norm @type NormConstraint
-        %   W_out: the output weight of the constrained norm @type Model
+        %   W_out: the output weight of the constrained norm @type AnalyticModel
         %
         % Return values:
         %  self : the resulting constrained norm @type NormConstraint
@@ -135,7 +135,7 @@ classdef NormConstraint < Specification
         %
         % Parameters:
         %   self: the constrained norm @type NormConstraint
-        %   W_in: the input weight of the constrained norm @type Model
+        %   W_in: the input weight of the constrained norm @type AnalyticModel
         %
         % Return values:
         %  self : the resulting constrained norm @type NormConstraint

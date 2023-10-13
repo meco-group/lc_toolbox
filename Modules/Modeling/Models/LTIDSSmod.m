@@ -14,7 +14,7 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LTIDSSmod < AbstractDSSmod & AbstractLTImod & Model
+classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LTIDSSmod < AbstractDSSmod & AbstractLTImod & AnalyticModel
     %LTIDSSMOD Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -36,7 +36,7 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LTIDSSmod < AbstractDSSmod & Ab
             if isnumeric(self) || isnumeric(other)
                 product = mtimes@AbstractDSSmod(self,other);
             else
-                product = mtimes@Model(self,other);
+                product = mtimes@AnalyticModel(self,other);
             end
         end
         

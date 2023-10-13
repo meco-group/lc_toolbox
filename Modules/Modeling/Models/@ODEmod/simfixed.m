@@ -16,7 +16,7 @@
 
 function varargout = simfixed(type,varargin)
     function [ys,ts] = singlesim(type,self,index,varargin)
-        uv = zeros(self.nin,1); uv(index) = 1;
+        uv = zeros(nin(self),1); uv(index) = 1;
         switch(type)
             case 'step'
                 u = @(t) uv;
@@ -79,7 +79,7 @@ function varargout = simfixed(type,varargin)
         isnum = cellfun(@isnumeric,varargin);
         varargin{isnum} = t;
 
-        y2 = arrayfun(@(i) singlesim(type,self,i,varargin{:}),2:self.nin,'un',0);
+        y2 = arrayfun(@(i) singlesim(type,self,i,varargin{:}),2:nin(self),'un',0);
         y = cat(3,y,y2{:});
 
         switch nargout

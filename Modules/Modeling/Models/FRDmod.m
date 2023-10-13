@@ -42,6 +42,10 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) FRDmod < Model & frd
         function sys = std(self)
             sys = frd(self);
         end
+
+        function sys = lft(varargin)
+            sys = fromstd(lft@frd(varargin{:}));
+        end
         
         function blk = blkdiag(varargin)
             if all(cellfun(@(x)isa(x,'FRDmod'),varargin))
@@ -57,17 +61,13 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) FRDmod < Model & frd
                     end
                     varargin(~idxdisc) = cellfun(@(x) setfield(x, 'Ts', Ts), varargin(~idxdisc), 'un', 0);
                 end
-                blk = blkdiag@frd(varargin{:});     
+                blk = fromstd(blkdiag@frd(varargin{:}));     
             else
                 blk = varargin{1};
                 for i = 2:nargin
                     blk = blkdiag_model(blk,varargin{i});
                 end
             end
-        end
-        
-        function varargout = subsref(self,varargin)
-            varargout = {subsref@frd(self,varargin{:})};
         end
         
         function varargout = size(self,varargin)       

@@ -35,7 +35,7 @@ classdef Solver_systune < Solver
     % @f$P@f$ should be LTI, proper and stabilizable by @f$K@f$. 
     %
     % See \c systune (MATLAB's Robust Control Toolbox) for the syntax and for more details.
-        
+    
     methods
         function self = Solver_systune(options)
         % Constructor for Solver_systune objects.
@@ -98,10 +98,15 @@ classdef Solver_systune < Solver
             end
 
             % make controller block
-            if specs.order == -1
-                K = ltiblock.ss('K',size(P.a,1),length(nu),length(ny));
+            if isfield(self.options,'K')
+                K = self.options.K;
+                assert(all(size(K) == [length(ny),length(nu)]),'Dimensions of K are not in line with nu and ny');
             else
-                K = ltiblock.ss('K',specs.order,length(nu),length(ny));
+                if specs.order == -1
+                    K = ltiblock.ss('K',size(P.a,1),length(nu),length(ny));
+                else
+                    K = ltiblock.ss('K',specs.order,length(nu),length(ny));
+                end
             end
             K.u = P.outputname(ny);
             K.y = P.inputname(nu);
@@ -119,7 +124,7 @@ classdef Solver_systune < Solver
             end
             
             % save output
-            self.K = fromstd(getBlockValue(CL,'K'));
+            self.K = fromstd(getValue(self.options.K,CL.blocks));
             self.gamma = gammaormu;
             self.gamma(ch.H2) = 0;
             self.mu = gammaormu;

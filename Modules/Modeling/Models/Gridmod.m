@@ -14,7 +14,7 @@
 % You should have received a copy of the GNU Lesser General Public License
 % along with LCToolbox. If not, see <http://www.gnu.org/licenses/>.
 
-classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod}) Gridmod < Model
+classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod}) Gridmod < AnalyticModel
 % Create a grid of models. 
     
     properties
@@ -270,6 +270,7 @@ classdef (InferiorClasses = {?LPVLFTmod,?LTILFTmod,?LPVDSSmod,?LTIDSSmod,?FRDmod
             assert(length(varargin)==nparameters(self));
             el = self.grid_{varargin{:}};
         end
+        
     end
     
     methods (Access=protected)

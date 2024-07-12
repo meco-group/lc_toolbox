@@ -165,6 +165,64 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
 
         end
         
+        function fb = feedback(self,other,varargin)
+            
+            self = IOSystem(fromstd(self));
+            other = IOSystem(fromstd(other)); 
+            
+            switch nargin
+                case 2 % feedback(sys1,sys2)
+                    assert(size(self,2) == size(other,1) && size(self,1) == size(other,2), 'Incompatible input and/or output dimensions of sys1 and sys2.'); 
+                    feedin = 1:size(self,2);
+                    feedout = 1:size(self,1); 
+                    sign = -1;
+                case 3 % feedback(sys1,sys2,sign)
+                    assert(size(self,2) == size(other,1) && size(self,1) == size(other,2), 'Incompatible input and/or output dimensions of sys1 and sys2.'); 
+                    feedin = 1:size(self,2);
+                    feedout = 1:size(self,1); 
+                    sign = varargin{1};
+                    assert(sign == -1 || sign == 1, 'sign can only take -1 or +1 as input.'); 
+                case 4 % feedback(sys1,sys2,feedin,feedout)
+                    feedin = varargin{1}(:);
+                    feedout = varargin{2}(:);
+                    sign = -1;
+                    assert(all(ismember(feedin,1:size(self,2))), 'Invalid input indices for sys1 in feedin.');
+                    assert(all(ismember(feedout,1:size(self,1))), 'Invalid output indices for sys1 in feedout.');
+                    assert(length(feedin)==size(other,1), 'Length of feedin does not match the number of outputs of sys2.');
+                    assert(length(feedout)==size(other,2), 'Length of feedout does not match the number of inputs of sys2.');
+                case 5 % feedback(sys1,sys2,feedin,feedout,sign)
+                    feedin = varargin{1}(:);
+                    feedout = varargin{2}(:);
+                    sign = varargin{3};
+                    assert(all(ismember(feedin,1:size(self,2))), 'Invalid input indices for sys1 in feedin.');
+                    assert(all(ismember(feedout,1:size(self,1))), 'Invalid output indices for sys1 in feedout.');
+                    assert(length(feedin)==size(other,1), 'Length of feedin does not match the number of outputs of sys2.');
+                    assert(length(feedout)==size(other,2), 'Length of feedout does not match the number of inputs of sys2.');
+                    assert(sign == -1 || sign == 1, 'sign can only take -1 or +1 as input.'); 
+                otherwise
+                    error('Invalid number of input arguments.');
+            end
+            
+            u = Signal(size(self,2));
+            y = self.out; 
+           
+            e = Signal(size(self,2));
+            if sign<0
+                e(feedin) = u(feedin) - other.out;
+            else
+                e(feedin) = u(feedin) + other.out;
+            end
+            ff = setdiff(1:size(self,2),feedin);
+            e(ff) = u(ff); 
+            
+            connections = [self.in == e; other.in == y(feedout)];
+            fb = IOSystem(self,other,connections); 
+            fb = fb(y,u); 
+            fb = fb.model();
+            fb = fb.content(1); 
+
+        end
+        
     end
     
     % Plotting
@@ -220,7 +278,7 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) Model
         end
              
         function varargout = pzmap(varargin)
-            varargin = stdargs(varargin,'linmod');
+            varargin = stdargs(varargin,'freq');
             [varargout{1:nargout}] = pzmap(varargin{:});
         end   
     end

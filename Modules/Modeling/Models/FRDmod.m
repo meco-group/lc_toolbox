@@ -101,6 +101,10 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) FRDmod < Model & frd
         function cat = horzcat(self,varargin)
             cat = horzcat@Model(self,varargin{:});
         end
+        
+        function varargout = feedback(self,varargin)       
+            varargout = {feedback@Model(self,varargin{:})};
+        end
 
     end
     

@@ -189,6 +189,32 @@ classdef AbstractLFTmod
         % Return values: 
         %  S : same model with only M22, M23, M32 and M33 nonzero (= a
         %  descriptor state-space model) @AbstractLFTmod
+        
+            % check for constant splines
+            function [b,val] = isconstant(spline)
+                if isa(spline,'splines.Function')
+                    c = spline.coeff.data;
+                    if ndims(c)<4; c = reshape(c,[1 size(c)]); end
+                    for k=1:size(c,1)
+                        for l=2:size(c,2)
+                            dc(k,l-1,:,:) = c(k,l,:,:)-c(k,l-1,:,:);
+                        end
+                    end
+                    b = ~(any(dc(:) > sqrt(eps)));
+                    if b
+                        cog = cellfun(@(x) mean(x.domain.data), spline.tensor_basis.bases);
+                        val = spline.eval(cog);
+                    else
+                        val = spline;
+                    end
+                else
+                    b = true;
+                    val = spline;
+                end
+            end
+            
+            [~,self.M] = cellfun(@isconstant, self.M, 'un', 0);
+            
             assert(isnumeric(self.Nu) && isnumeric(self.Nl),'Cannot convert the LFT because Nu and/or Nl are not constant');
             assert(isnumeric(self.M{1,1}),'Cannot convert the LFT to a SS because M11 is not constant');
             assert(isnumeric(self.M{4,4}),'Cannot convert the LFT to a SS because M44 is not constant');

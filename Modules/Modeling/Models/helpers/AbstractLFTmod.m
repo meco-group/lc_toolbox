@@ -377,7 +377,7 @@ classdef AbstractLFTmod
         %  Nls : array of Nl matrices with the appropriate size @type double
         %  Es : array of E matrices with the appropriate size @type double
             if size(val,1) == length(val); val = val'; end
-            grid = num2cell(val);
+            if ~iscell(val); grid = num2cell(val); else; grid = val; end
             [Ms,Nus,Nls,Es] = grid_eval(self,grid,args);
         end
         

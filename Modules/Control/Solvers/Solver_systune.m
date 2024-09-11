@@ -124,7 +124,7 @@ classdef Solver_systune < Solver
             end
             
             % save output
-            self.K = fromstd(getValue(self.options.K,CL.blocks));
+            self.K = fromstd(getValue(K,CL.blocks));
             self.gamma = gammaormu;
             self.gamma(ch.H2) = 0;
             self.mu = gammaormu;

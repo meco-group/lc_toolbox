@@ -28,7 +28,11 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LTILFTmod < AbstractLFTmod & Ab
         
         function sys = std(self)
             S = transpose(lft2ss(self));
-            sys = dss(S{:},self.E,self.Ts);
+            if ~isempty(self.E) && isdiag(self.E) && ~any(diag(self.E)-1)  
+                sys = dss(S{:},[],self.Ts);
+            else
+                sys = dss(S{:},self.E,self.Ts);
+            end
         end
         
         function sys = simplify(self)

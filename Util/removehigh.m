@@ -41,7 +41,9 @@ p_rm = cellfun(@(x) remove(x,xmin), p, 'UniformOutput', false);
 z_rm = cellfun(@(x) remove(x,xmin), z, 'UniformOutput', false);
 
 sys_remove = zpk(z_rm,p_rm,k);
-sys_remove = sys_remove.*(abs(evalfr(stdsys,j*1e-2))./abs(evalfr(sys_remove,j*1e-2)));
+dcg = abs(evalfr(stdsys,j*1e-2))./abs(evalfr(sys_remove,j*1e-2));
+dcg(isnan(dcg)) = 0;
+sys_remove = sys_remove.*dcg; 
 sys_remove = correctPhase(sys_remove,stdsys);
 
 if flag

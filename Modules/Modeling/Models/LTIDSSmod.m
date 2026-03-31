@@ -25,7 +25,11 @@ classdef (InferiorClasses = {?zpk,?tf,?ss,?frd}) LTIDSSmod < AbstractDSSmod & Ab
         end
         
         function sys = std(self)
-            sys = dss(self.A,self.B,self.C,self.D,self.E,self.Ts);
+            if ~isempty(self.E) && isdiag(self.E) && ~any(diag(self.E)-1)  
+                sys = dss(self.A,self.B,self.C,self.D,[],self.Ts);
+            else
+                sys = dss(self.A,self.B,self.C,self.D,self.E,self.Ts);
+            end
         end
         
         function sys = simplify(self)

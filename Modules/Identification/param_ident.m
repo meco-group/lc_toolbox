@@ -48,7 +48,7 @@ if isa(data,'idfrd') || isa(data,'frd') || isa(data,'FRDmod')
     switch method
     
         case 'nllsfdi'
-            FRF = permute(reshape(data.ResponseData,[],length(data.Frequency)),[2,1])
+            FRF = permute(reshape(data.ResponseData,[],length(data.Frequency)),[2,1]);
 
             if settings.Ts == 0
                 [Bn,An,~,~,~,~] = nllsfdi(FRF, freq, settings.FRFW, settings.denh, settings.denl, settings.numh(:), settings.numl(:), settings.maxIter, settings.relVar, settings.GN, 'c');

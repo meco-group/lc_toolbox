@@ -26,8 +26,14 @@ function [equal,error] = sscomp(ss1,ss2,varargin)
 %   equal: true if the models describe the same system
 %   error: error between the 2 models, calculated as max(maxdiff(ssC*ssA*ssB),maxdiff(ssD))
 
-if(nargin>2)
-    tol = varargin{1};
+if nargin > 2
+    dconly = varargin{1};
+else
+    dconly = true;
+end
+
+if(nargin>3)
+    tol = varargin{2};
 else
     tol = 1e-6;
 end
@@ -75,13 +81,22 @@ if all(sz1==sz2)
                 X1 = ss1.A; B1 = ss1.B; C1 = ss1.C; Y1 = ss1.E;
                 X2 = ss2.A; B2 = ss2.B; C2 = ss2.C; Y2 = ss2.E;
             end
-            [X1,B1,C1,~,~,~] = diagE_ip(X1,B1,C1,Y1);
-            [X2,B2,C2,~,~,~] = diagE_ip(X2,B2,C2,Y2);
-            state_error = C1*X1*B1-C2*X2*B2;
-            output_error = ss1.D-ss2.D;
+            if dconly
+                equal = isempty(X1) && isempty(X2) && all(ss1.D == ss2.D,'all');
+                if equal
+                    error = 0;
+                else
+                    error = inf;
+                end
+            else
+                [X1,B1,C1,~,~,~] = diagE_ip(X1,B1,C1,Y1);
+                [X2,B2,C2,~,~,~] = diagE_ip(X2,B2,C2,Y2);
+                state_error = C1*X1*B1-C2*X2*B2;
+                output_error = ss1.D-ss2.D;
 
-            error = max(abs([state_error(:);output_error(:)]));
-            equal = (error < tol);
+                error = max(abs([state_error(:);output_error(:)]));
+                equal = (error < tol);
+            end
         end
     end
 else

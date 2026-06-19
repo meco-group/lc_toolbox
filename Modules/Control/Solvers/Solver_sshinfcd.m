@@ -69,20 +69,20 @@ classdef Solver_sshinfcd < Solver
             
             % Compute the controller
             tic;
-            [K,sqgamma] = self.solverobj.solve(self.options);
+            [K,gamma] = self.solverobj.solve(self.options);
             self.info.time = toc;
             
             % Rescale performance weights
             self.performance = specs.performance;
             if specs.nobj > 0
                 objectives = 1:specs.nobj;
-                self.performance(objectives) = Norm.dealscale(self.performance(objectives),num2cell(1./sqgamma(objectives,1)));
+                self.performance(objectives) = Norm.dealscale(self.performance(objectives),num2cell(1./gamma(objectives,1)));
             end
             
             % Save solver output
             self.K = fromstd(K);
-            self.gamma = sqrt(sqgamma);
-            self.mu = zeros(size(sqgamma));
+            self.gamma = gamma;
+            self.mu = zeros(size(gamma));
             self.solved = true;
             
         end

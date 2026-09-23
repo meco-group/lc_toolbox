@@ -75,87 +75,81 @@ classdef Solver
             nofch = length(allchannels);
             
             % loop through all channels create a plot of it
-            % (strongly inspired by issue 157355 on MATLAB Answers on the MATLAB Central)
-             interface = com.mathworks.mde.desk.MLDesktop.getInstance;
-             interface.addGroup('allplots');
-             interface.setGroupDocked('allplots',0);
-             dims = java.awt.Dimension(1,nofch);
-             interface.setDocumentArrangement('allplots',2,dims);
-             figures = gobjects(1,nofch);
-             interface.setDocumentArrangement(['Performance channels: ' strjoin(cellfun(@(x) x.K.name,allinp,'un',0),', ')],1,dims);
-             warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+            fig = figure('Name', ['Performance channels: ' strjoin(cellfun(@(x) x.K.name,allinp,'un',0),', ')]);
+            tabs = uitabgroup(fig);
              
             for k=1:nofch
-                  thischan = allchannels{k};
-                  
-                  % preprocess the screen
-                   figures(k) = figure('WindowStyle', 'docked', 'Name', sprintf(['Channel: ' thischan.name]), 'NumberTitle', 'off');
-                   set(get(handle(figures(k)), 'javaframe'), 'GroupName', ['Performance channels: ' strjoin(cellfun(@(x) x.K.name,allinp,'un',0),', ')]);
-                  
-                  % the actual plotting
-                  l = {}; 
-                  for i=1:nargin
-                      % new color for this solution
-                      thissol = allinp{i};
-                      col = colors(i);
-                      
-                      % check whether the channel occurs in the specs 
-                      chs = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
-                      chs = cat(1,chs{:}); pl = zeros(size(chs));
-                      for j=1:length(chs)
-                          if length(chs(j))==length(thischan) && chs(j)==thischan
-                              pl(j)=1;
-                          else
-                              pl(j)=0;
-                          end
-                      end
-                      specs = thissol.performance(logical(pl));
-                      
-                      if ~isempty(specs)
-                          % plot the closed loop performance and the weights
-                          if issiso(thischan) % bodemag
-                              % the channel itself
-                              h = bodeplot(thissol.H(thischan),col);
-                              l = [l, {thissol.K.name}];
-                              setoptions(h,'PhaseVisible','off');
-                              hold on; 
+                thischan = allchannels{k};
+                
+                % Generate tab for the current channel
+                tab = uitab(tabs, 'Title', sprintf(['Channel: ' thischan.name]));
+                panel = uipanel('Parent', tab, 'BorderType', 'none', 'Units', 'normalized', 'Position', [0 0 1 1]); % required to make bode/sigma work
+                axes( 'Parent', panel, 'Units', 'normalized', 'Position', [0.08 0.10 0.88 0.82]); % make axes so that bode will plot on it
 
-                              % the weights
-                              for j=1:length(specs)
-                                  if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
-                                     bodeplot(fromstd(inv(specs{j}.W_in*specs{j}.W_out)),[col '--']); 
-                                     a = gca;
-                                     a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
-                                  end
-                              end
-                          else % sigma
-                              l = [l, thissol.K.name];
-                              % everything together
-                              c = 0;
-                              for j=1:length(specs)
-                                  if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
-                                     sigma(fromstd(specs{j}.W_out*thissol.H(thischan).content(1)*specs{j}.W_in,col)); hold on;
-                                     if c>=1
-                                        a = gca;
-                                        a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % avoid same controller multiple times in legend
-                                     end
-                                     c = c+1;
-                                     sigma(ss(1),[col '--']);
-                                     a = gca;
-                                     a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
-                                  end
-                              end
-                          end
-                      end
-                  end
-                  
-                  % make legend and title
-                  drawnow; legend(l,'Location','southeast'); 
-                  if issiso(thischan)
-                      title(['Bodeplot magnitude: channel ''' thischan.name '''']);
-                  else
-                      title(['Singular value plot: channel ''' thischan.name '''']);
-                  end
+                % the actual plotting
+                l = {}; 
+                for i=1:nargin
+                    % new color for this solution
+                    thissol = allinp{i};
+                    col = colors(i);
+                    
+                    % check whether the channel occurs in the specs 
+                    chs = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
+                    chs = cat(1,chs{:}); pl = zeros(size(chs));
+                    for j=1:length(chs)
+                        if length(chs(j))==length(thischan) && chs(j)==thischan
+                            pl(j)=1;
+                        else
+                            pl(j)=0;
+                        end
+                    end
+                    specs = thissol.performance(logical(pl));
+                    
+                    if ~isempty(specs)
+                        % plot the closed loop performance and the weights
+                        if issiso(thischan) % bodemag
+                            % the channel itself
+                            h = bodeplot(thissol.H(thischan),col);
+                            l = [l, {thissol.K.name}];
+                            setoptions(h,'PhaseVisible','off');
+                            hold on; 
+
+                            % the weights
+                            for j=1:length(specs)
+                                if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
+                                    bodeplot(fromstd(inv(specs{j}.W_in*specs{j}.W_out)),[col '--']); 
+                                    a = gca;
+                                    a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
+                                end
+                            end
+                        else % sigma
+                            l = [l, thissol.K.name];
+                            % everything together
+                            c = 0;
+                            for j=1:length(specs)
+                                if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
+                                    sigma(fromstd(specs{j}.W_out*thissol.H(thischan).content(1)*specs{j}.W_in,col)); hold on;
+                                    if c>=1
+                                    a = gca;
+                                    a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % avoid same controller multiple times in legend
+                                    end
+                                    c = c+1;
+                                    sigma(ss(1),[col '--']);
+                                    a = gca;
+                                    a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                % make legend and title
+                drawnow; legend(l,'Location','southeast'); 
+                if issiso(thischan)
+                    title(['Bodeplot magnitude: channel ''' thischan.name '''']);
+                else
+                    title(['Singular value plot: channel ''' thischan.name '''']);
+                end
             end
             
         end
@@ -198,66 +192,61 @@ classdef Solver
             end
             chs = chs(idxsiso);
             nofch = length(chs);
-            
+                  
             % loop through all channels create a plot of it
-            % (strongly inspired by issue 157355 on MATLAB Answers on the MATLAB Central)
-             interface = com.mathworks.mde.desk.MLDesktop.getInstance;
-             interface.addGroup('allplots');
-             interface.setGroupDocked('allplots',0);
-             dims = java.awt.Dimension(1,nofch);
-             interface.setDocumentArrangement('allplots',2,dims);
-             figures = gobjects(1,nofch);
-             interface.setDocumentArrangement(['Performance channels: ' strjoin(cellfun(@(x) x.K.name,sols,'un',0),', ')],1,dims);
-             warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+            fig = figure('Name', ['Performance channels: ' strjoin(cellfun(@(x) x.K.name,sols,'un',0),', ')]);
+            tabs = uitabgroup(fig);
              
             for k=1:nofch
-                  thischan = chs{k};
-                  
-                  % preprocess the screen
-                   figures(k) = figure('WindowStyle', 'docked', 'Name', sprintf(['Channel: ' thischan.name]), 'NumberTitle', 'off');
-                   set(get(handle(figures(k)), 'javaframe'), 'GroupName', ['Performance channels: ' strjoin(cellfun(@(x) x.K.name,sols,'un',0),', ')]);
-                  
-                  % the actual plotting
-                  l = {}; 
-                  for i=1:length(sols)
-                      % new color for this solution
-                      thissol = sols{i};
-                      col = colors(i);
-                      
-                      % check whether the channel occurs in the specs 
-                      chs_ = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
-                      chs_ = cat(1,chs_{:}); pl = zeros(size(chs_));
-                      for j=1:length(chs_)
-                          if length(chs_(j))==length(thischan) && chs_(j)==thischan
-                              pl(j)=1;
-                          else
-                              pl(j)=0;
-                          end
-                      end
-                      specs = thissol.performance(logical(pl));
-                      
-                      if ~isempty(specs)
-                          % plot the closed loop performance and the weights
-                              % the channel itself
-                              h = bodeplot(thissol.H(thischan),col);
-                              l = [l, {thissol.K.name}];
-                              setoptions(h,'PhaseVisible','off');
-                              hold on; 
+                thischan = chs{k};
+                
+                % Generate tab for the current channel
+                tab = uitab(tabs, 'Title', sprintf(['Channel: ' thischan.name]));
+                panel = uipanel('Parent', tab, 'BorderType', 'none', 'Units', 'normalized', 'Position', [0 0 1 1]); % required to make bode/sigma work
+                axes( 'Parent', panel, 'Units', 'normalized', 'Position', [0.08 0.10 0.88 0.82]); % make axes so that bode will plot on it
 
-                              % the weights
-                              for j=1:length(specs)
-                                  if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
-                                     bodeplot(inv(specs{j}.W_in*specs{j}.W_out),[col '--']); 
-                                     a = gca;
-                                     a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
-                                  end
-                              end
-                      end
-                  end
-                  
-                  % make legend and title
-                  drawnow; legend(l,'Location','southeast'); 
-                  title(['Bodeplot magnitude: channel ''' thischan.name '''']);
+
+                % the actual plotting
+                l = {}; 
+                for i=1:length(sols)
+                    % new color for this solution
+                    thissol = sols{i};
+                    col = colors(i);
+                    
+                    % check whether the channel occurs in the specs 
+                    chs_ = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
+                    chs_ = cat(1,chs_{:}); pl = zeros(size(chs_));
+                    for j=1:length(chs_)
+                        if length(chs_(j))==length(thischan) && chs_(j)==thischan
+                            pl(j)=1;
+                        else
+                            pl(j)=0;
+                        end
+                    end
+                    specs = thissol.performance(logical(pl));
+                    
+                    if ~isempty(specs)
+                        % plot the closed loop performance and the weights
+                            % the channel itself
+                            h = bodeplot(thissol.H(thischan),col);
+                            l = [l, {thissol.K.name}];
+                            setoptions(h,'PhaseVisible','off');
+                            hold on; 
+
+                            % the weights
+                            for j=1:length(specs)
+                                if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
+                                    bodeplot(inv(specs{j}.W_in*specs{j}.W_out),[col '--']); 
+                                    a = gca;
+                                    a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
+                                end
+                            end
+                    end
+                end
+                
+                % make legend and title
+                drawnow; legend(l,'Location','southeast'); 
+                title(['Bodeplot magnitude: channel ''' thischan.name '''']);
             end
         end
         
@@ -294,68 +283,62 @@ classdef Solver
                 chs = num2cell(allchs(locb));
             end
             nofch = length(chs);
-            
+
             % loop through all channels create a plot of it
-            % (strongly inspired by issue 157355 on MATLAB Answers on the MATLAB Central)
-             interface = com.mathworks.mde.desk.MLDesktop.getInstance;
-             interface.addGroup('allplots');
-             interface.setGroupDocked('allplots',0);
-             dims = java.awt.Dimension(1,nofch);
-             interface.setDocumentArrangement('allplots',2,dims);
-             figures = gobjects(1,nofch);
-             interface.setDocumentArrangement(['Performance channels: ' strjoin(cellfun(@(x) x.K.name,sols,'un',0),', ')],1,dims);
-             warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+            fig = figure('Name', ['Performance channels: ' strjoin(cellfun(@(x) x.K.name,sols,'un',0),', ')]);
+            tabs = uitabgroup(fig);
              
             for k=1:nofch
-                  thischan = chs{k};
-                  
-                  % preprocess the screen
-                   figures(k) = figure('WindowStyle', 'docked', 'Name', sprintf(['Channel: ' thischan.name]), 'NumberTitle', 'off');
-                   set(get(handle(figures(k)), 'javaframe'), 'GroupName', ['Performance channels: ' strjoin(cellfun(@(x) x.K.name,sols,'un',0),', ')]);
-                  
-                  % the actual plotting
-                  l = {}; 
-                  for i=1:length(sols)
-                      % new color for this solution
-                      thissol = sols{i};
-                      col = colors(i);
-                      
-                      % check whether the channel occurs in the specs 
-                      chs_ = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
-                      chs_ = cellfun(@(x) x, chs); pl = zeros(size(chs_));
-                      for j=1:length(chs_)
-                          if length(chs_(j))==length(thischan) && chs_(j)==thischan
-                              pl(j)=1;
-                          else
-                              pl(j)=0;
-                          end
-                      end
-                      specs = thissol.performance(logical(pl));
-                      
-                      if ~isempty(specs)
-                          % plot the closed loop performance and the weights
-                          l = [l, thissol.K.name];
-                          % everything together
-                          c = 0;
-                          for j=1:length(specs)
-                              if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
-                                 sigma(specs{j}.W_out*thissol.H(thischan).content(1)*specs{j}.W_in,col); hold on;
-                                 if c>=1
-                                     a = gca;
-                                     a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % avoid same controller multiple times in legend
-                                 end
-                                 c = c+1;
-                                 sigma(ss(1),[col '--']);
-                                 a = gca;
-                                 a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
-                              end
-                          end
-                      end
-                  end
-                  
-                  % make legend and title
-                  drawnow; legend(l,'Location','southeast'); 
-                  title(['Singular value plot: channel ''' thischan.name '''']);
+                thischan = chs{k};
+                
+                % Generate tab for the current channel
+                tab = uitab(tabs, 'Title', sprintf(['Channel: ' thischan.name]));
+                panel = uipanel('Parent', tab, 'BorderType', 'none', 'Units', 'normalized', 'Position', [0 0 1 1]); % required to make bode/sigma work
+                axes( 'Parent', panel, 'Units', 'normalized', 'Position', [0.08 0.10 0.88 0.82]); % make axes so that bode will plot on it
+
+                % the actual plotting
+                l = {}; 
+                for i=1:length(sols)
+                    % new color for this solution
+                    thissol = sols{i};
+                    col = colors(i);
+                    
+                    % check whether the channel occurs in the specs 
+                    chs_ = cellfun(@(x) {getchannel(getnorm(x))}, thissol.performance);
+                    chs_ = cat(1, chs_{:}); pl = zeros(size(chs_));
+                    for j=1:length(chs_)
+                        if length(chs_(j))==length(thischan) && chs_(j)==thischan
+                            pl(j)=1;
+                        else
+                            pl(j)=0;
+                        end
+                    end
+                    specs = thissol.performance(logical(pl));
+                    
+                    if ~isempty(specs)
+                        % plot the closed loop performance and the weights
+                        l = [l, thissol.K.name];
+                        % everything together
+                        c = 0;
+                        for j=1:length(specs)
+                            if normtype(specs{j})==Inf % 2-norms are not easy to show graphically
+                                sigma(specs{j}.W_out*thissol.H(thischan).content(1)*specs{j}.W_in,col); hold on;
+                                if c>=1
+                                    a = gca;
+                                    a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % avoid same controller multiple times in legend
+                                end
+                                c = c+1;
+                                sigma(ss(1),[col '--']);
+                                a = gca;
+                                a.Children(1).Annotation.LegendInformation.IconDisplayStyle = 'off'; % don't show constraints in the legend
+                            end
+                        end
+                    end
+                end
+                
+                % make legend and title
+                drawnow; legend(l,'Location','southeast'); 
+                title(['Singular value plot: channel ''' thischan.name '''']);
             end
         end
     end

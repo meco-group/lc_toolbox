@@ -24,10 +24,20 @@ function sys = fromstd(sys,varargin)
 % Return values:
 %  sys : the equivalent LCToolbox model @type Model
 
+name = '';
+if isobject(sys)
+    if any(strcmp(properties(sys),'Name'))
+        name = sys.Name;
+    elseif any(strcmp(properties(sys),'name'))
+        name = sys.name;
+    end
+end
 c = cellfun(@ischar,varargin);
-assert(sum(c)<=1,'Only one string argument allowed');
+assert(sum(c)<=1,'Only one string argument allowed.');
 if any(c)
-    name = varargin{c};
+    newname = varargin{c};
+    warning(['Overwriting model name: ', name, ' by ' , newname , '.']);
+    name = newname;
     varargin(c) = [];
 end
 if ~isa(sys,'Model')
@@ -67,10 +77,7 @@ if ~isa(sys,'Model')
          sys = Gridmod(grid,params);
     end
 end
-if any(c)
-    if ~isempty(sys.name) && ~strcmp(sys.name,name)
-        warning(['Overwriting model name: ',sys.name, ' by ' ,name]);
-    end
+if ~isempty(name)
     sys.name = name;
 end
 end
